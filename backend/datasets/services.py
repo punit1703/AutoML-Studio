@@ -1,0 +1,107 @@
+import pandas as pd
+import os
+from rest_framework.exceptions import ValidationError
+from django.core.files.uploadedfile import UploadedFile
+from .models import Dataset
+import json
+import math
+
+class DatasetService:
+    ALLOWED_EXTENSIONS = {
+        '.csv': 'CSV',
+        '.xls': 'EXCEL',
+        '.xlsx': 'EXCEL',
+        '.json': 'JSON'
+    }
+    
+    @staticmethod
+    def validate_file(file: UploadedFile):
+        ext = os.path.splitext(file.name)[1].lower()
+        if ext not in DatasetService.ALLOWED_EXTENSIONS:
+            raise ValidationError(f"Unsupported file extension. Allowed extensions are: {', '.join(DatasetService.ALLOWED_EXTENSIONS.keys())}")
+        return DatasetService.ALLOWED_EXTENSIONS[ext]
+        
+    @staticmethod
+    def _read_dataframe(dataset: Dataset, nrows=None):
+        file_path = dataset.file.path
+        ext = os.path.splitext(dataset.file_name)[1].lower()
+        
+        try:
+            if ext == '.csv':
+                return pd.read_csv(file_path, nrows=nrows)
+            elif ext in ['.xls', '.xlsx']:
+                return pd.read_excel(file_path, nrows=nrows)
+            elif ext == '.json':
+                return pd.read_json(file_path, nrows=nrows)
+            else:
+                raise ValueError("Unsupported format")
+        except Exception as e:
+            raise ValidationError(f"Error parsing file: {str(e)}")
+            
+    @staticmethod
+    def extract_metadata(dataset: Dataset):
+        df = DatasetService._read_dataframe(dataset)
+        
+        row_count, column_count = df.shape
+        
+        # Determine data types mapping pandas dtypes to generic types
+        data_types = {}
+        for col, dtype in df.dtypes.items():
+            dtype_str = str(dtype)
+            if 'int' in dtype_str:
+                generic_type = 'integer'
+            elif 'float' in dtype_str:
+                generic_type = 'float'
+            elif 'bool' in dtype_str:
+                generic_type = 'boolean'
+            elif 'datetime' in dtype_str:
+                generic_type = 'datetime'
+            else:
+                generic_type = 'string'
+            data_types[str(col)] = generic_type
+            
+        # Count missing values
+        missing_values = df.isnull().sum().to_dict()
+        missing_values = {str(k): int(v) for k, v in missing_values.items()}
+        
+        # Count duplicates
+        duplicate_count = int(df.duplicated().sum())
+        
+        metadata = {
+            "data_types": data_types,
+            "missing_values": missing_values,
+            "duplicate_count": duplicate_count
+        }
+        
+        dataset.row_count = row_count
+        dataset.column_count = column_count
+        dataset.metadata = metadata
+        dataset.save(update_fields=['row_count', 'column_count', 'metadata'])
+        
+        return dataset
+
+    @staticmethod
+    def get_preview(dataset: Dataset, rows=10):
+        try:
+            df = DatasetService._read_dataframe(dataset, nrows=rows)
+            # Replace NaN/NaT with None for JSON serialization
+            df = df.where(pd.notnull(df), None)
+            return df.to_dict(orient='records')
+        except Exception as e:
+            raise ValidationError(f"Error generating preview: {str(e)}")
+
+    @staticmethod
+    def process_upload(project, file: UploadedFile):
+        file_type = DatasetService.validate_file(file)
+        
+        dataset = Dataset.objects.create(
+            project=project,
+            file=file,
+            file_name=file.name,
+            file_type=file_type,
+            file_size=file.size
+        )
+        
+        # Note: In a production environment, extract_metadata should be done asynchronously 
+        # (e.g., using Celery) as parsing large files can block the API response.
+        return DatasetService.extract_metadata(dataset)
