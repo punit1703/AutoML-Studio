@@ -45,3 +45,13 @@ class DatasetViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=True, methods=['get'])
+    def analyze(self, request, pk=None):
+        dataset = self.get_object()
+        target_column = request.query_params.get('target_column')
+        
+        try:
+            analysis_data = DatasetService.analyze_dataset(dataset, target_column=target_column)
+            return Response(analysis_data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

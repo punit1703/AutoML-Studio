@@ -5,6 +5,7 @@ from django.core.files.uploadedfile import UploadedFile
 from .models import Dataset
 import json
 import math
+from ml_engine.analysis import DatasetAnalysisEngine
 
 class DatasetService:
     ALLOWED_EXTENSIONS = {
@@ -105,3 +106,12 @@ class DatasetService:
         # Note: In a production environment, extract_metadata should be done asynchronously 
         # (e.g., using Celery) as parsing large files can block the API response.
         return DatasetService.extract_metadata(dataset)
+
+    @staticmethod
+    def analyze_dataset(dataset: Dataset, target_column: str = None):
+        try:
+            df = DatasetService._read_dataframe(dataset)
+            engine = DatasetAnalysisEngine(df)
+            return engine.analyze(target_column=target_column)
+        except Exception as e:
+            raise ValidationError(f"Error analyzing dataset: {str(e)}")
