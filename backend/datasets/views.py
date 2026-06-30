@@ -109,3 +109,31 @@ class DatasetViewSet(viewsets.ModelViewSet):
             return Response(result, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'])
+    def generate_notebook(self, request, pk=None):
+        dataset = self.get_object()
+        target_column = request.data.get('target_column')
+        
+        if not target_column:
+            return Response({"error": "target_column is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            result = DatasetService.generate_notebook(dataset, target_column)
+            return Response(result, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'])
+    def generate_report(self, request, pk=None):
+        dataset = self.get_object()
+        target_column = request.data.get('target_column')
+        
+        if not target_column:
+            return Response({"error": "target_column is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            result = DatasetService.generate_report(dataset, target_column)
+            return Response(result, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

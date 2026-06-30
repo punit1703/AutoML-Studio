@@ -12,6 +12,8 @@ from ml_engine.preprocessing import DataPreprocessingEngine
 from ml_engine.visualization import VisualizationEngine
 from ml_engine.training import ModelTrainingEngine
 from ml_engine.evaluation import ModelEvaluationEngine
+from ml_engine.notebook_generation import NotebookGenerator
+from ml_engine.report_generation import ReportGenerator
 import joblib
 import glob
 
@@ -203,3 +205,25 @@ class DatasetService:
             return eval_engine.evaluate()
         except Exception as e:
             raise ValidationError(f"Error evaluating models: {str(e)}")
+
+    @staticmethod
+    def generate_notebook(dataset: Dataset, target_column: str):
+        try:
+            output_dir = os.path.join(settings.MEDIA_ROOT, 'exports', str(dataset.id))
+            generator = NotebookGenerator(dataset.file.path, target_column, output_dir)
+            filename = generator.generate()
+            return {"download_url": f"/media/exports/{dataset.id}/{filename}"}
+        except Exception as e:
+            raise ValidationError(f"Error generating notebook: {str(e)}")
+            
+    @staticmethod
+    def generate_report(dataset: Dataset, target_column: str):
+        try:
+            eval_results = DatasetService.evaluate_models(dataset, target_column)
+            
+            output_dir = os.path.join(settings.MEDIA_ROOT, 'exports', str(dataset.id))
+            generator = ReportGenerator(eval_results, output_dir)
+            filename = generator.generate()
+            return {"download_url": f"/media/exports/{dataset.id}/{filename}"}
+        except Exception as e:
+            raise ValidationError(f"Error generating report: {str(e)}")
