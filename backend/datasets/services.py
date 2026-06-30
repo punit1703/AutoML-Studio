@@ -14,6 +14,7 @@ from ml_engine.training import ModelTrainingEngine
 from ml_engine.evaluation import ModelEvaluationEngine
 from ml_engine.notebook_generation import NotebookGenerator
 from ml_engine.report_generation import ReportGenerator
+from ml_engine.utils import read_dataframe
 import joblib
 import glob
 
@@ -31,27 +32,11 @@ class DatasetService:
         if ext not in DatasetService.ALLOWED_EXTENSIONS:
             raise ValidationError(f"Unsupported file extension. Allowed extensions are: {', '.join(DatasetService.ALLOWED_EXTENSIONS.keys())}")
         return DatasetService.ALLOWED_EXTENSIONS[ext]
-        
-    @staticmethod
-    def _read_dataframe(dataset: Dataset, nrows=None):
-        file_path = dataset.file.path
-        ext = os.path.splitext(dataset.file_name)[1].lower()
-        
-        try:
-            if ext == '.csv':
-                return pd.read_csv(file_path, nrows=nrows)
-            elif ext in ['.xls', '.xlsx']:
-                return pd.read_excel(file_path, nrows=nrows)
-            elif ext == '.json':
-                return pd.read_json(file_path, nrows=nrows)
-            else:
-                raise ValueError("Unsupported format")
-        except Exception as e:
-            raise ValidationError(f"Error parsing file: {str(e)}")
+
             
     @staticmethod
     def extract_metadata(dataset: Dataset):
-        df = DatasetService._read_dataframe(dataset)
+        df = read_dataframe(dataset.file.path, dataset.file_name)
         
         row_count, column_count = df.shape
         
@@ -94,7 +79,7 @@ class DatasetService:
     @staticmethod
     def get_preview(dataset: Dataset, rows=10):
         try:
-            df = DatasetService._read_dataframe(dataset, nrows=rows)
+            df = read_dataframe(dataset.file.path, dataset.file_name, nrows=rows)
             # Replace NaN/NaT with None for JSON serialization
             df = df.where(pd.notnull(df), None)
             return df.to_dict(orient='records')
@@ -120,7 +105,7 @@ class DatasetService:
     @staticmethod
     def analyze_dataset(dataset: Dataset, target_column: str = None):
         try:
-            df = DatasetService._read_dataframe(dataset)
+            df = read_dataframe(dataset.file.path, dataset.file_name)
             engine = DatasetAnalysisEngine(df)
             return engine.analyze(target_column=target_column)
         except Exception as e:
@@ -129,7 +114,7 @@ class DatasetService:
     @staticmethod
     def preprocess_dataset(dataset: Dataset, config: dict):
         try:
-            df = DatasetService._read_dataframe(dataset)
+            df = read_dataframe(dataset.file.path, dataset.file_name)
             engine = DataPreprocessingEngine(df)
             preprocessed_df = engine.apply_pipeline(config)
             
@@ -148,7 +133,7 @@ class DatasetService:
     @staticmethod
     def generate_visualization(dataset: Dataset, chart_type: str, params: dict):
         try:
-            df = DatasetService._read_dataframe(dataset)
+            df = read_dataframe(dataset.file.path, dataset.file_name)
             
             output_dir = os.path.join(settings.MEDIA_ROOT, 'visualizations', str(dataset.id))
             
@@ -163,7 +148,7 @@ class DatasetService:
     @staticmethod
     def train_models(dataset: Dataset, target_column: str):
         try:
-            df = DatasetService._read_dataframe(dataset)
+            df = read_dataframe(dataset.file.path, dataset.file_name)
             
             output_dir = os.path.join(settings.MEDIA_ROOT, 'models', str(dataset.id))
             
@@ -177,7 +162,7 @@ class DatasetService:
     @staticmethod
     def evaluate_models(dataset: Dataset, target_column: str):
         try:
-            df = DatasetService._read_dataframe(dataset)
+            df = read_dataframe(dataset.file.path, dataset.file_name)
             
             output_dir = os.path.join(settings.MEDIA_ROOT, 'models', str(dataset.id))
             if not os.path.exists(output_dir):

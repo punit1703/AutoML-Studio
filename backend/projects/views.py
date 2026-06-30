@@ -18,7 +18,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_queryset(self):
-        return Project.objects.filter(user=self.request.user)
+        return Project.objects.filter(user=self.request.user).select_related('user')
 
     def perform_create(self, serializer):
         ProjectService.create_project(
@@ -39,8 +39,6 @@ class ProjectViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def export(self, request, pk=None):
         project = self.get_object()
-        try:
-            zip_path = ProjectService.export_project(project)
-            return FileResponse(open(zip_path, 'rb'), as_attachment=True, filename=f"project_{project.id}_export.zip")
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        zip_path = ProjectService.export_project(project)
+        return FileResponse(open(zip_path, 'rb'), as_attachment=True, filename=f"project_{project.id}_export.zip")
+

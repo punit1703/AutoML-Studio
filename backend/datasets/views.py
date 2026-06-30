@@ -14,7 +14,7 @@ class DatasetViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         # Only return datasets belonging to projects owned by the current user
-        return Dataset.objects.filter(project__user=self.request.user)
+        return Dataset.objects.filter(project__user=self.request.user).select_related('project')
         
     def get_serializer_class(self):
         if self.action == 'create':
@@ -40,34 +40,25 @@ class DatasetViewSet(viewsets.ModelViewSet):
         
         # Optionally allow specifying row count
         rows = int(request.query_params.get('rows', 10))
-        
-        try:
-            preview_data = DatasetService.get_preview(dataset, rows=rows)
-            return Response({"preview": preview_data}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        preview_data = DatasetService.get_preview(dataset, rows=rows)
+        return Response({"preview": preview_data}, status=status.HTTP_200_OK)
+
 
     @action(detail=True, methods=['get'])
     def analyze(self, request, pk=None):
         dataset = self.get_object()
         target_column = request.query_params.get('target_column')
-        
-        try:
-            analysis_data = DatasetService.analyze_dataset(dataset, target_column=target_column)
-            return Response(analysis_data, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        analysis_data = DatasetService.analyze_dataset(dataset, target_column=target_column)
+        return Response(analysis_data, status=status.HTTP_200_OK)
+
 
     @action(detail=True, methods=['post'])
     def preprocess(self, request, pk=None):
         dataset = self.get_object()
         config = request.data.get('config', {})
-        
-        try:
-            result = DatasetService.preprocess_dataset(dataset, config)
-            return Response(result, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        result = DatasetService.preprocess_dataset(dataset, config)
+        return Response(result, status=status.HTTP_200_OK)
+
 
     @action(detail=True, methods=['post'])
     def visualize(self, request, pk=None):
@@ -77,12 +68,9 @@ class DatasetViewSet(viewsets.ModelViewSet):
         
         if not chart_type:
             return Response({"error": "chart_type is required"}, status=status.HTTP_400_BAD_REQUEST)
-            
-        try:
-            result = DatasetService.generate_visualization(dataset, chart_type, params)
-            return Response(result, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        result = DatasetService.generate_visualization(dataset, chart_type, params)
+        return Response(result, status=status.HTTP_200_OK)
+
 
     @action(detail=True, methods=['post'])
     def train(self, request, pk=None):
@@ -91,12 +79,9 @@ class DatasetViewSet(viewsets.ModelViewSet):
         
         if not target_column:
             return Response({"error": "target_column is required"}, status=status.HTTP_400_BAD_REQUEST)
-            
-        try:
-            result = DatasetService.train_models(dataset, target_column)
-            return Response(result, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        result = DatasetService.train_models(dataset, target_column)
+        return Response(result, status=status.HTTP_200_OK)
+
 
     @action(detail=True, methods=['post'])
     def evaluate(self, request, pk=None):
@@ -105,12 +90,9 @@ class DatasetViewSet(viewsets.ModelViewSet):
         
         if not target_column:
             return Response({"error": "target_column is required"}, status=status.HTTP_400_BAD_REQUEST)
-            
-        try:
-            result = DatasetService.evaluate_models(dataset, target_column)
-            return Response(result, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        result = DatasetService.evaluate_models(dataset, target_column)
+        return Response(result, status=status.HTTP_200_OK)
+
 
     @action(detail=True, methods=['post'])
     def generate_notebook(self, request, pk=None):
@@ -119,12 +101,9 @@ class DatasetViewSet(viewsets.ModelViewSet):
         
         if not target_column:
             return Response({"error": "target_column is required"}, status=status.HTTP_400_BAD_REQUEST)
-            
-        try:
-            result = DatasetService.generate_notebook(dataset, target_column)
-            return Response(result, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        result = DatasetService.generate_notebook(dataset, target_column)
+        return Response(result, status=status.HTTP_200_OK)
+
 
     @action(detail=True, methods=['post'])
     def generate_report(self, request, pk=None):
@@ -133,37 +112,28 @@ class DatasetViewSet(viewsets.ModelViewSet):
         
         if not target_column:
             return Response({"error": "target_column is required"}, status=status.HTTP_400_BAD_REQUEST)
-            
-        try:
-            result = DatasetService.generate_report(dataset, target_column)
-            return Response(result, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        result = DatasetService.generate_report(dataset, target_column)
+        return Response(result, status=status.HTTP_200_OK)
+
 
     @action(detail=True, methods=['get'])
     def download_model(self, request, pk=None):
         dataset = self.get_object()
         model_name = request.query_params.get('model_name')
-        try:
-            file_path = DatasetService.get_model_path(dataset, model_name)
-            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=os.path.basename(file_path))
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        file_path = DatasetService.get_model_path(dataset, model_name)
+        return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=os.path.basename(file_path))
+
 
     @action(detail=True, methods=['get'])
     def download_notebook(self, request, pk=None):
         dataset = self.get_object()
-        try:
-            file_path = DatasetService.get_notebook_path(dataset)
-            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=os.path.basename(file_path))
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        file_path = DatasetService.get_notebook_path(dataset)
+        return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=os.path.basename(file_path))
+
 
     @action(detail=True, methods=['get'])
     def download_report(self, request, pk=None):
         dataset = self.get_object()
-        try:
-            file_path = DatasetService.get_report_path(dataset)
-            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=os.path.basename(file_path))
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        file_path = DatasetService.get_report_path(dataset)
+        return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=os.path.basename(file_path))
+
