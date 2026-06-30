@@ -6,6 +6,7 @@ from .models import Dataset
 import json
 import math
 from ml_engine.analysis import DatasetAnalysisEngine
+from ml_engine.preprocessing import DataPreprocessingEngine
 
 class DatasetService:
     ALLOWED_EXTENSIONS = {
@@ -115,3 +116,22 @@ class DatasetService:
             return engine.analyze(target_column=target_column)
         except Exception as e:
             raise ValidationError(f"Error analyzing dataset: {str(e)}")
+
+    @staticmethod
+    def preprocess_dataset(dataset: Dataset, config: dict):
+        try:
+            df = DatasetService._read_dataframe(dataset)
+            engine = DataPreprocessingEngine(df)
+            preprocessed_df = engine.apply_pipeline(config)
+            
+            # For preview purposes, return first 100 rows
+            preview_df = preprocessed_df.head(100)
+            # Replace NaN/NaT with None for JSON serialization
+            preview_df = preview_df.where(pd.notnull(preview_df), None)
+            
+            return {
+                "shape": list(preprocessed_df.shape),
+                "preview": preview_df.to_dict(orient='records')
+            }
+        except Exception as e:
+            raise ValidationError(f"Error preprocessing dataset: {str(e)}")

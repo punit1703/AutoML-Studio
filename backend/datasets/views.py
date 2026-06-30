@@ -55,3 +55,14 @@ class DatasetViewSet(viewsets.ModelViewSet):
             return Response(analysis_data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'])
+    def preprocess(self, request, pk=None):
+        dataset = self.get_object()
+        config = request.data.get('config', {})
+        
+        try:
+            result = DatasetService.preprocess_dataset(dataset, config)
+            return Response(result, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
