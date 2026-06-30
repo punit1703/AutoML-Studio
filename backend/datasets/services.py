@@ -10,6 +10,7 @@ from django.conf import settings
 from ml_engine.analysis import DatasetAnalysisEngine
 from ml_engine.preprocessing import DataPreprocessingEngine
 from ml_engine.visualization import VisualizationEngine
+from ml_engine.training import ModelTrainingEngine
 
 class DatasetService:
     ALLOWED_EXTENSIONS = {
@@ -153,3 +154,17 @@ class DatasetService:
             return {"chart_url": relative_url}
         except Exception as e:
             raise ValidationError(f"Error generating visualization: {str(e)}")
+
+    @staticmethod
+    def train_models(dataset: Dataset, target_column: str):
+        try:
+            df = DatasetService._read_dataframe(dataset)
+            
+            output_dir = os.path.join(settings.MEDIA_ROOT, 'models', str(dataset.id))
+            
+            engine = ModelTrainingEngine(df, target_column, output_dir)
+            results = engine.train_and_evaluate()
+            
+            return results
+        except Exception as e:
+            raise ValidationError(f"Error training models: {str(e)}")
