@@ -5,8 +5,11 @@ from django.core.files.uploadedfile import UploadedFile
 from .models import Dataset
 import json
 import math
+import os
+from django.conf import settings
 from ml_engine.analysis import DatasetAnalysisEngine
 from ml_engine.preprocessing import DataPreprocessingEngine
+from ml_engine.visualization import VisualizationEngine
 
 class DatasetService:
     ALLOWED_EXTENSIONS = {
@@ -135,3 +138,18 @@ class DatasetService:
             }
         except Exception as e:
             raise ValidationError(f"Error preprocessing dataset: {str(e)}")
+
+    @staticmethod
+    def generate_visualization(dataset: Dataset, chart_type: str, params: dict):
+        try:
+            df = DatasetService._read_dataframe(dataset)
+            
+            output_dir = os.path.join(settings.MEDIA_ROOT, 'visualizations', str(dataset.id))
+            
+            engine = VisualizationEngine(df, output_dir)
+            filename = engine.generate_chart(chart_type, params)
+            
+            relative_url = f"/media/visualizations/{dataset.id}/{filename}"
+            return {"chart_url": relative_url}
+        except Exception as e:
+            raise ValidationError(f"Error generating visualization: {str(e)}")

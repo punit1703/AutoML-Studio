@@ -66,3 +66,18 @@ class DatasetViewSet(viewsets.ModelViewSet):
             return Response(result, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'])
+    def visualize(self, request, pk=None):
+        dataset = self.get_object()
+        chart_type = request.data.get('chart_type')
+        params = request.data.get('params', {})
+        
+        if not chart_type:
+            return Response({"error": "chart_type is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            result = DatasetService.generate_visualization(dataset, chart_type, params)
+            return Response(result, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
