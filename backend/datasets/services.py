@@ -11,6 +11,9 @@ from ml_engine.analysis import DatasetAnalysisEngine
 from ml_engine.preprocessing import DataPreprocessingEngine
 from ml_engine.visualization import VisualizationEngine
 from ml_engine.training import ModelTrainingEngine
+from ml_engine.evaluation import ModelEvaluationEngine
+import joblib
+import glob
 
 class DatasetService:
     ALLOWED_EXTENSIONS = {
@@ -168,3 +171,35 @@ class DatasetService:
             return results
         except Exception as e:
             raise ValidationError(f"Error training models: {str(e)}")
+
+    @staticmethod
+    def evaluate_models(dataset: Dataset, target_column: str):
+        try:
+            df = DatasetService._read_dataframe(dataset)
+            
+            output_dir = os.path.join(settings.MEDIA_ROOT, 'models', str(dataset.id))
+            if not os.path.exists(output_dir):
+                raise ValidationError("No trained models found for this dataset. Please train models first.")
+                
+            training_engine = ModelTrainingEngine(df, target_column, output_dir)
+            problem_type = training_engine._detect_problem_type()
+            _, X_test, _, y_test = training_engine._prepare_data(problem_type)
+            
+            models = {}
+            for model_path in glob.glob(os.path.join(output_dir, "*.joblib")):
+                model_name = os.path.basename(model_path).replace('.joblib', '').replace('_', ' ').title()
+                if model_name.lower() == 'xgboost':
+                    model_name = 'XGBoost'
+                elif model_name.lower() == 'svm':
+                    model_name = 'SVM'
+                elif model_name.lower() == 'knn':
+                    model_name = 'KNN'
+                models[model_name] = joblib.load(model_path)
+                
+            if not models:
+                raise ValidationError("No saved models found. Please train models first.")
+                
+            eval_engine = ModelEvaluationEngine(problem_type, models, X_test, y_test)
+            return eval_engine.evaluate()
+        except Exception as e:
+            raise ValidationError(f"Error evaluating models: {str(e)}")
