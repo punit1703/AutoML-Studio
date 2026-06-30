@@ -3,6 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
+from django.http import FileResponse
+import os
 from .models import Dataset
 from .serializers import DatasetSerializer, DatasetUploadSerializer
 from .services import DatasetService
@@ -135,5 +137,33 @@ class DatasetViewSet(viewsets.ModelViewSet):
         try:
             result = DatasetService.generate_report(dataset, target_column)
             return Response(result, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get'])
+    def download_model(self, request, pk=None):
+        dataset = self.get_object()
+        model_name = request.query_params.get('model_name')
+        try:
+            file_path = DatasetService.get_model_path(dataset, model_name)
+            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=os.path.basename(file_path))
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get'])
+    def download_notebook(self, request, pk=None):
+        dataset = self.get_object()
+        try:
+            file_path = DatasetService.get_notebook_path(dataset)
+            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=os.path.basename(file_path))
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get'])
+    def download_report(self, request, pk=None):
+        dataset = self.get_object()
+        try:
+            file_path = DatasetService.get_report_path(dataset)
+            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=os.path.basename(file_path))
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

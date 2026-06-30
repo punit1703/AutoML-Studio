@@ -227,3 +227,27 @@ class DatasetService:
             return {"download_url": f"/media/exports/{dataset.id}/{filename}"}
         except Exception as e:
             raise ValidationError(f"Error generating report: {str(e)}")
+
+    @staticmethod
+    def get_model_path(dataset: Dataset, model_name: str):
+        if not model_name:
+            raise ValidationError("model_name is required.")
+        filename = f"{model_name.replace(' ', '_').lower()}.joblib"
+        file_path = os.path.join(settings.MEDIA_ROOT, 'models', str(dataset.id), filename)
+        if not os.path.exists(file_path):
+            raise ValidationError(f"Model '{model_name}' not found. Please train models first.")
+        return file_path
+
+    @staticmethod
+    def get_notebook_path(dataset: Dataset):
+        file_path = os.path.join(settings.MEDIA_ROOT, 'exports', str(dataset.id), 'reproducible_pipeline.ipynb')
+        if not os.path.exists(file_path):
+            raise ValidationError("Notebook not found. Please generate it first.")
+        return file_path
+
+    @staticmethod
+    def get_report_path(dataset: Dataset):
+        file_path = os.path.join(settings.MEDIA_ROOT, 'exports', str(dataset.id), 'automl_evaluation_report.pdf')
+        if not os.path.exists(file_path):
+            raise ValidationError("Report not found. Please generate it first.")
+        return file_path

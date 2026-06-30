@@ -1,4 +1,8 @@
-from rest_framework import viewsets, permissions, filters
+from rest_framework import viewsets, permissions, filters, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.http import FileResponse
+import os
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Project
 from .serializers import ProjectSerializer
@@ -31,3 +35,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         ProjectService.delete_project(instance)
+
+    @action(detail=True, methods=['get'])
+    def export(self, request, pk=None):
+        project = self.get_object()
+        try:
+            zip_path = ProjectService.export_project(project)
+            return FileResponse(open(zip_path, 'rb'), as_attachment=True, filename=f"project_{project.id}_export.zip")
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
