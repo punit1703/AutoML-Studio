@@ -13,7 +13,8 @@ import {
   TrendingUp,
   GitCommit,
   CheckCircle2,
-  Download
+  Download,
+  Grid2X2
 } from "lucide-react";
 import { 
   LineChart, Line, 
@@ -77,7 +78,7 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } }
 };
 
 export default function EvaluationPage() {
@@ -383,7 +384,7 @@ export default function EvaluationPage() {
                     ]}>
                       <PolarGrid stroke="#ffffff20" />
                       <PolarAngleAxis dataKey="metric" tick={{ fill: '#ffffff80', fontSize: 12 }} />
-                      <PolarRadiusAxis angle={30} domain={[0.8, 1]} tick={{ fill: '#ffffff50', fontSize: 10 }} />
+                      <PolarRadiusAxis angle={30} domain={[0.8, 1]} tickCount={3} tick={{ fill: '#ffffff50', fontSize: 10 }} />
                       <Radar name="XGBoost" dataKey="XGBoost" stroke="#38bdf8" fill="#38bdf8" fillOpacity={0.4} />
                       <Radar name="LightGBM" dataKey="LightGBM" stroke="#f472b6" fill="#f472b6" fillOpacity={0.4} />
                       <Legend verticalAlign="bottom" height={36} />
