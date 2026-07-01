@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { UploadCloud, FileType, CheckCircle2, Loader2, Table as TableIcon, ArrowRight, Play } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -8,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 type UploadState = "idle" | "dragging" | "uploading" | "success" | "preview";
 
 export default function DatasetUploadPage() {
+  const router = useRouter();
   const [uploadState, setUploadState] = React.useState<UploadState>("idle");
   const [uploadProgress, setUploadProgress] = React.useState(0);
   const [fileDetails, setFileDetails] = React.useState<{ name: string; size: string } | null>(null);
@@ -210,7 +212,10 @@ export default function DatasetUploadPage() {
                   <button onClick={resetUpload} className="px-4 py-2 rounded-md bg-white/5 border border-white/10 text-sm font-medium hover:bg-white/10 transition-colors">
                     Upload Different File
                   </button>
-                  <button className="px-4 py-2 rounded-md bg-primary text-black font-semibold text-sm hover:bg-primary/90 transition-all shadow-[0_0_15px_rgba(56,189,248,0.3)] flex items-center gap-2">
+                  <button 
+                    onClick={() => router.push("/studio/analysis")}
+                    className="px-4 py-2 rounded-md bg-primary text-black font-semibold text-sm hover:bg-primary/90 transition-all shadow-[0_0_15px_rgba(56,189,248,0.3)] flex items-center gap-2"
+                  >
                     Start Analysis <Play className="w-4 h-4" />
                   </button>
                 </div>
