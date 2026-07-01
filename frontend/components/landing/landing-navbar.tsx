@@ -34,8 +34,12 @@ export function LandingNavbar({ className }: React.HTMLAttributes<HTMLDivElement
         </nav>
 
         <div className="flex items-center gap-3">
-          <button className="hidden sm:inline-flex rounded-full text-sm font-medium h-9 px-4 text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">Log in</button>
-          <button className="rounded-full h-9 px-5 text-sm font-medium bg-primary text-black hover:bg-primary/90 shadow-[0_0_15px_rgba(56,189,248,0.3)] hover:shadow-[0_0_25px_rgba(56,189,248,0.5)] transition-all">Get Started</button>
+          <Link href="/login" className="hidden sm:inline-flex items-center justify-center rounded-full text-sm font-medium h-9 px-4 text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">
+            Log in
+          </Link>
+          <Link href="/register" className="inline-flex items-center justify-center rounded-full h-9 px-5 text-sm font-medium bg-primary text-black hover:bg-primary/90 shadow-[0_0_15px_rgba(56,189,248,0.3)] hover:shadow-[0_0_25px_rgba(56,189,248,0.5)] transition-all">
+            Get Started
+          </Link>
         </div>
       </motion.header>
     </div>
