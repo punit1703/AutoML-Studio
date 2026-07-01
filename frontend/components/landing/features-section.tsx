@@ -92,7 +92,7 @@ function BentoCard({ feature, idx }: { feature: any, idx: number }) {
           background: useMotionTemplate`
             radial-gradient(
               600px circle at ${mouseX}px ${mouseY}px,
-              rgba(10, 102, 194, 0.1),
+              rgba(56, 189, 248, 0.15),
               transparent 80%
             )
           `,

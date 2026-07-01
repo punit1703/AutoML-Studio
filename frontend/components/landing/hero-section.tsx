@@ -5,16 +5,19 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { fadeIn } from "@/lib/animations";
+import { Terminal, Code2, Cpu } from "lucide-react";
 
 export function HeroSection({ className }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <section className={cn("relative pt-36 pb-24 md:pt-52 md:pb-40 overflow-hidden", className)}>
+    <section className={cn("relative pt-36 pb-24 md:pt-52 md:pb-40 overflow-hidden bg-background", className)}>
       
-      {/* Animated Background Mesh/Orbs */}
+      {/* Dark Mode Animated Grid Background */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
+      
+      {/* Deep Glows */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-primary/20 blur-[120px] rounded-full animate-pulse" style={{ animationDuration: '8s' }} />
-        <div className="absolute top-[20%] right-[-10%] w-[40%] h-[60%] bg-blue-400/20 blur-[120px] rounded-full animate-pulse" style={{ animationDuration: '12s' }} />
-        <div className="absolute bottom-[-20%] left-[20%] w-[60%] h-[50%] bg-indigo-500/10 blur-[150px] rounded-full animate-pulse" style={{ animationDuration: '10s' }} />
+        <div className="absolute top-[-10%] left-[20%] w-[40%] h-[40%] bg-primary/20 blur-[150px] rounded-full" />
+        <div className="absolute top-[20%] right-[-10%] w-[30%] h-[50%] bg-accent/10 blur-[150px] rounded-full" />
       </div>
 
       <div className="max-w-7xl mx-auto px-6 relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -29,116 +32,126 @@ export function HeroSection({ className }: React.HTMLAttributes<HTMLDivElement>)
               animate: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } },
             }}
           >
-            <motion.div variants={fadeIn} className="inline-flex items-center gap-2 mb-6 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-primary text-xs font-semibold uppercase tracking-wider backdrop-blur-sm shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              Introducing AutoML Studio
+            <motion.div variants={fadeIn} className="inline-flex items-center gap-2 mb-6 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-primary text-xs font-mono uppercase tracking-wider backdrop-blur-sm shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_rgba(56,189,248,0.8)] animate-pulse" />
+              v2.0 Beta Live
             </motion.div>
             
             <motion.h1 variants={fadeIn} className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tighter text-foreground leading-[1.05]">
-              Build ML Models <br className="hidden lg:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-br from-primary via-blue-500 to-indigo-400">
-                Without Code.
+              Train ML Models <br className="hidden lg:block" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-br from-primary via-accent to-primary-light">
+                At Light Speed.
               </span>
             </motion.h1>
             
             <motion.p variants={fadeIn} className="mt-6 text-lg md:text-xl text-muted-foreground font-medium max-w-lg mx-auto lg:mx-0 leading-relaxed">
-              Upload your data. Train multiple algorithms. Compare performance instantly. Download the best model in seconds.
+              The ultimate AutoML infrastructure for developers. Upload datasets, run parallel training across dozens of algorithms, and deploy instantly.
             </motion.p>
             
             <motion.div variants={fadeIn} className="mt-10 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-              <Button size="lg" className="w-full sm:w-auto text-base px-8 h-14 rounded-full shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all border border-primary/50 group relative overflow-hidden">
-                <span className="relative z-10 font-semibold tracking-wide">Get Started Free</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] group-hover:translate-x-[150%] transition-transform duration-700 ease-in-out" />
-              </Button>
-              <Button size="lg" variant="outline" className="w-full sm:w-auto text-base px-8 h-14 rounded-full border-border/50 hover:bg-muted/50 transition-all font-medium">
-                View Documentation
-              </Button>
+              <button className="inline-flex items-center justify-center w-full sm:w-auto text-base px-8 h-14 rounded-md bg-primary hover:bg-primary/90 text-black shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:shadow-[0_0_30px_rgba(56,189,248,0.6)] hover:-translate-y-0.5 transition-all font-mono font-semibold">
+                <Terminal className="w-4 h-4 mr-2" />
+                Start Training
+              </button>
+              <button className="inline-flex items-center justify-center w-full sm:w-auto text-base px-8 h-14 rounded-md border border-white/20 text-foreground hover:bg-white/10 hover:border-white/30 transition-all font-mono font-medium">
+                <Code2 className="w-4 h-4 mr-2" />
+                Read Docs
+              </button>
             </motion.div>
           </motion.div>
         </div>
         
-        {/* Hero Illustration / Floating Cards (Glassmorphism) */}
-        <div className="relative h-[400px] md:h-[500px] w-full hidden lg:block z-10">
-          
-          <FloatingCard 
-            delay={0}
-            className="top-10 right-10 w-72 bg-white/70 dark:bg-black/40 backdrop-blur-2xl border-white/40 dark:border-white/10 shadow-2xl shadow-black/5"
+        {/* Terminal / IDE Mockup */}
+        <div className="relative w-full hidden lg:block z-10">
+          <motion.div
+            initial={{ opacity: 0, x: 50, rotateY: -10 }}
+            animate={{ opacity: 1, x: 0, rotateY: 0 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="relative rounded-xl bg-[#09090b] border border-white/10 shadow-2xl shadow-black/80 overflow-hidden"
+            style={{ perspective: 1000 }}
           >
-            <div className="p-5 space-y-4">
-              <div className="flex justify-between items-center">
-                <div className="text-xs font-bold text-foreground uppercase tracking-wider">Random Forest</div>
-                <div className="text-success text-xs font-bold px-2 py-1 bg-success/10 rounded-full border border-success/20">94.2% Acc</div>
+            {/* Terminal Header */}
+            <div className="flex items-center px-4 py-3 border-b border-white/10 bg-[#18181b]">
+              <div className="flex gap-2">
+                <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                <div className="w-3 h-3 rounded-full bg-green-500/80" />
               </div>
-              <div className="h-2 bg-secondary/50 rounded-full overflow-hidden shadow-inner">
-                <div className="h-full bg-gradient-to-r from-success/80 to-success w-[94.2%]" />
+              <div className="mx-auto text-xs font-mono text-muted-foreground flex items-center gap-2">
+                <Cpu className="w-3 h-3" />
+                automl-cluster-us-east
               </div>
             </div>
-          </FloatingCard>
 
-          <FloatingCard 
-            delay={1.5}
-            className="top-48 left-0 w-80 bg-white/70 dark:bg-black/40 backdrop-blur-2xl border-white/40 dark:border-white/10 shadow-2xl shadow-black/5 z-20"
-          >
-            <div className="p-5 space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-blue-500/20 border border-primary/20 flex items-center justify-center text-primary font-bold shadow-inner">CSV</div>
-                <div>
-                  <div className="text-sm font-bold text-foreground">customer_churn_24.csv</div>
-                  <div className="text-xs text-muted-foreground font-medium mt-0.5">1.2M rows • 14 features</div>
+            {/* Terminal Body */}
+            <div className="p-6 font-mono text-sm space-y-4">
+              <div className="flex gap-4">
+                <span className="text-primary">❯</span>
+                <span className="text-foreground">import automl_studio as aml</span>
+              </div>
+              <div className="flex gap-4">
+                <span className="text-primary">❯</span>
+                <span className="text-foreground">dataset = aml.load("transactions.csv")</span>
+              </div>
+              <div className="flex gap-4">
+                <span className="text-primary">❯</span>
+                <span className="text-foreground">model = aml.train(dataset, target="fraud")</span>
+              </div>
+              
+              <div className="pt-4 border-t border-white/5 space-y-3">
+                <div className="text-muted-foreground">Initializing parallel training pool (12 workers)...</div>
+                
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-accent">XGBoost [gpu:0]</span>
+                    <span className="text-success">98.4%</span>
+                  </div>
+                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <motion.div 
+                      className="h-full bg-success rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)]"
+                      initial={{ width: "0%" }}
+                      animate={{ width: "98.4%" }}
+                      transition={{ duration: 2, delay: 0.5, ease: "circOut" }}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-accent">Random Forest [cpu:1]</span>
+                    <span className="text-muted-foreground">94.1%</span>
+                  </div>
+                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <motion.div 
+                      className="h-full bg-white/30 rounded-full"
+                      initial={{ width: "0%" }}
+                      animate={{ width: "94.1%" }}
+                      transition={{ duration: 2.5, delay: 0.2, ease: "circOut" }}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-accent">LightGBM [gpu:1]</span>
+                    <span className="text-primary animate-pulse">Training...</span>
+                  </div>
+                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden relative">
+                    <motion.div 
+                      className="absolute top-0 bottom-0 left-0 bg-primary/50 rounded-full w-1/3"
+                      animate={{ x: ["-100%", "300%"] }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <div className="h-1.5 flex-[3] bg-primary rounded-full shadow-sm" />
-                <div className="h-1.5 flex-[1] bg-primary/40 rounded-full" />
-                <div className="h-1.5 flex-[1] bg-primary/20 rounded-full" />
-              </div>
             </div>
-          </FloatingCard>
-
-          <FloatingCard 
-            delay={3}
-            className="bottom-10 right-20 w-64 bg-white/70 dark:bg-black/40 backdrop-blur-2xl border-white/40 dark:border-white/10 shadow-2xl shadow-black/5"
-          >
-            <div className="p-4 flex items-center gap-4">
-              <div className="relative flex items-center justify-center">
-                <div className="w-10 h-10 rounded-full border-2 border-warning/20 border-t-warning animate-spin" />
-                <div className="absolute w-2 h-2 rounded-full bg-warning" />
-              </div>
-              <div>
-                <div className="text-sm font-bold">Training XGBoost...</div>
-                <div className="text-xs text-muted-foreground font-medium mt-0.5">Epoch 42/100</div>
-              </div>
-            </div>
-          </FloatingCard>
+          </motion.div>
           
+          {/* Subtle Glow Behind Terminal */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-primary/20 blur-[100px] rounded-full -z-10" />
         </div>
       </div>
     </section>
-  );
-}
-
-function FloatingCard({ children, className, delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 50, scale: 0.95 }}
-      animate={{ 
-        opacity: 1, 
-        y: [0, -20, 0],
-        scale: 1
-      }}
-      transition={{ 
-        opacity: { duration: 0.8, delay: delay * 0.2 },
-        scale: { duration: 0.8, delay: delay * 0.2 },
-        y: {
-          duration: 6,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: delay * 0.5,
-        }
-      }}
-      className={cn("absolute rounded-2xl border", className)}
-    >
-      {children}
-    </motion.div>
   );
 }

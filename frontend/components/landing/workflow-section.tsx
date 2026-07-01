@@ -55,7 +55,7 @@ export function WorkflowSection({ className }: React.HTMLAttributes<HTMLDivEleme
           
           {/* Animated Gradient Line */}
           <motion.div 
-            className="absolute left-[39px] md:left-1/2 top-4 w-1 bg-gradient-to-b from-primary via-blue-400 to-primary rounded-full -translate-x-1/2 hidden md:block origin-top shadow-[0_0_15px_rgba(10,102,194,0.5)]" 
+            className="absolute left-[39px] md:left-1/2 top-4 w-1 bg-gradient-to-b from-primary via-accent to-primary rounded-full -translate-x-1/2 hidden md:block origin-top shadow-[0_0_15px_rgba(56,189,248,0.5)]" 
             style={{ height: lineHeight }}
           />
 
@@ -74,7 +74,7 @@ export function WorkflowSection({ className }: React.HTMLAttributes<HTMLDivEleme
               >
                 {/* Text Side */}
                 <div className={cn("flex-1 text-center md:text-left", idx % 2 === 1 && "md:text-right")}>
-                  <div className="text-sm font-bold tracking-widest text-primary uppercase mb-2">Step 0{idx + 1}</div>
+                  <div className="text-sm font-mono tracking-widest text-primary uppercase mb-2">Build_Step_0{idx + 1}</div>
                   <h3 className="text-3xl font-bold tracking-tight mb-4">{step.title}</h3>
                   <p className="text-lg text-muted-foreground leading-relaxed">
                     {step.description}
@@ -82,7 +82,7 @@ export function WorkflowSection({ className }: React.HTMLAttributes<HTMLDivEleme
                 </div>
 
                 {/* Glowing Icon Center */}
-                <div className="relative z-10 w-20 h-20 rounded-full bg-gradient-to-br from-primary to-blue-600 shadow-[0_0_30px_rgba(10,102,194,0.3)] flex items-center justify-center shrink-0 ring-8 ring-background">
+                <div className="relative z-10 w-20 h-20 rounded-full bg-[#09090b] border border-white/10 shadow-[0_0_30px_rgba(56,189,248,0.2)] flex items-center justify-center shrink-0 ring-8 ring-background text-primary">
                   {step.icon}
                 </div>
 

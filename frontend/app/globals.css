@@ -1,68 +1,73 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #0A66C2;
-  --color-primary-foreground: #FFFFFF;
+  --color-primary: #38bdf8; /* Skyblue 400 */
+  --color-primary-light: #7dd3fc;
+  --color-primary-dark: #0284c7;
+  --color-primary-foreground: #000000;
 
-  --color-background: #F8FAFC;
-  --color-foreground: #0F172A;
+  --color-background: #000000;
+  --color-foreground: #ffffff;
 
-  --color-card: #FFFFFF;
-  --color-card-foreground: #0F172A;
+  --color-card: #09090b;
+  --color-card-foreground: #ffffff;
 
-  --color-sidebar: #0F172A;
-  --color-sidebar-foreground: #F8FAFC;
+  --color-sidebar: #09090b;
+  --color-sidebar-foreground: #ffffff;
 
-  --color-border: #E2E8F0;
+  --color-border: #27272a;
   
-  --color-muted: #F1F5F9;
-  --color-muted-foreground: #64748B;
+  --color-muted: #18181b;
+  --color-muted-foreground: #a1a1aa;
 
-  --color-success: #22C55E;
-  --color-success-foreground: #FFFFFF;
+  --color-accent: #0ea5e9; /* Skyblue 500 */
+  --color-accent-foreground: #ffffff;
 
-  --color-warning: #F59E0B;
-  --color-warning-foreground: #FFFFFF;
+  --color-success: #22c55e;
+  --color-success-foreground: #000000;
 
-  --color-error: #EF4444;
-  --color-error-foreground: #FFFFFF;
+  --color-warning: #f59e0b;
+  --color-warning-foreground: #000000;
+
+  --color-error: #ef4444;
+  --color-error-foreground: #000000;
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  --radius-lg: 1rem;
-  --radius-md: 0.75rem;
-  --radius-sm: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-md: 0.5rem;
+  --radius-sm: 0.25rem;
 }
 
 @layer base {
   :root {
-    --background: #F8FAFC;
-    --foreground: #0F172A;
-    --card: #FFFFFF;
-    --card-foreground: #0F172A;
-    --popover: #FFFFFF;
-    --popover-foreground: #0F172A;
-    --primary: #0A66C2;
-    --primary-foreground: #FFFFFF;
-    --secondary: #F1F5F9;
-    --secondary-foreground: #0F172A;
-    --muted: #F1F5F9;
-    --muted-foreground: #64748B;
-    --accent: #F1F5F9;
-    --accent-foreground: #0F172A;
-    --destructive: #EF4444;
-    --destructive-foreground: #FFFFFF;
-    --border: #E2E8F0;
-    --input: #E2E8F0;
-    --ring: #0A66C2;
-    --radius: 0.75rem;
-    --sidebar: #0F172A;
-    --sidebar-foreground: #F8FAFC;
-    --success: #22C55E;
-    --success-foreground: #FFFFFF;
-    --warning: #F59E0B;
-    --warning-foreground: #FFFFFF;
+    --background: #000000;
+    --foreground: #ffffff;
+    --card: #09090b;
+    --card-foreground: #ffffff;
+    --popover: #09090b;
+    --popover-foreground: #ffffff;
+    --primary: #38bdf8;
+    --primary-foreground: #000000;
+    --secondary: #18181b;
+    --secondary-foreground: #ffffff;
+    --muted: #18181b;
+    --muted-foreground: #a1a1aa;
+    --accent: #0ea5e9;
+    --accent-foreground: #ffffff;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --border: #27272a;
+    --input: #27272a;
+    --ring: #38bdf8;
+    --radius: 0.5rem;
+    --sidebar: #09090b;
+    --sidebar-foreground: #ffffff;
+    --success: #22c55e;
+    --success-foreground: #000000;
+    --warning: #f59e0b;
+    --warning-foreground: #000000;
   }
 }
 
@@ -71,11 +76,28 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans antialiased selection:bg-primary/10 selection:text-primary;
+    @apply bg-background text-foreground font-sans antialiased selection:bg-primary/40 selection:text-white;
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
   }
+}
+
+/* Typography utilities */
+.text-gradient {
+  background: linear-gradient(135deg, var(--color-foreground), var(--color-muted-foreground));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-gradient-primary {
+  background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary-dark));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
 }
 
 /* Scrollbar styles for minimal look */
@@ -84,12 +106,12 @@
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--color-background);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: #27272a;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-muted-foreground);
+  background: #3f3f46;
 }

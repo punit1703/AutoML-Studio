@@ -15,12 +15,12 @@ export function LandingNavbar({ className }: React.HTMLAttributes<HTMLDivElement
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         className={cn(
-          "pointer-events-auto flex h-14 items-center justify-between rounded-full bg-background/60 px-6 backdrop-blur-xl border border-white/20 shadow-lg shadow-black/5 w-full max-w-5xl",
+          "pointer-events-auto flex h-14 items-center justify-between rounded-full bg-background/50 px-6 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black w-full max-w-5xl",
           className
         )}
       >
-        <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-wide">
-          <div className="bg-primary/10 p-1.5 rounded-lg border border-primary/20">
+        <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-wide text-foreground">
+          <div className="bg-primary/20 p-1.5 rounded-lg border border-primary/30 shadow-[0_0_10px_rgba(56,189,248,0.2)]">
             <Database className="w-4 h-4 text-primary" />
           </div>
           AutoML Studio
@@ -34,8 +34,8 @@ export function LandingNavbar({ className }: React.HTMLAttributes<HTMLDivElement
         </nav>
 
         <div className="flex items-center gap-3">
-          <Button variant="ghost" className="hidden sm:inline-flex rounded-full text-sm font-medium h-9 px-4">Log in</Button>
-          <Button className="rounded-full h-9 px-5 text-sm font-medium shadow-md shadow-primary/20 hover:shadow-primary/40 transition-all">Get Started</Button>
+          <button className="hidden sm:inline-flex rounded-full text-sm font-medium h-9 px-4 text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">Log in</button>
+          <button className="rounded-full h-9 px-5 text-sm font-medium bg-primary text-black hover:bg-primary/90 shadow-[0_0_15px_rgba(56,189,248,0.3)] hover:shadow-[0_0_25px_rgba(56,189,248,0.5)] transition-all">Get Started</button>
         </div>
       </motion.header>
     </div>
