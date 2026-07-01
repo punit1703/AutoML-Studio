@@ -3,13 +3,13 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown } from "lucide-react";
+import { Plus } from "lucide-react";
 
 export function FaqSection({ className }: React.HTMLAttributes<HTMLDivElement>) {
   const faqs = [
     {
       question: "Do I need to know how to code to use AutoML Studio?",
-      answer: "Not at all. AutoML Studio is designed to be entirely no-code. You simply upload your dataset, select what you want to predict, and the platform handles the rest.",
+      answer: "Not at all. AutoML Studio is designed to be entirely no-code. You simply upload your dataset, select what you want to predict, and the platform handles the rest automatically.",
     },
     {
       question: "What types of datasets are supported?",
@@ -17,24 +17,27 @@ export function FaqSection({ className }: React.HTMLAttributes<HTMLDivElement>) 
     },
     {
       question: "Can I export the trained models?",
-      answer: "Yes! Once training is complete, you can download the best-performing model along with a simple Python script to use it locally or deploy it to your own servers.",
+      answer: "Yes! Once training is complete, you can download the best-performing model along with a simple Python script to use it locally or deploy it to your own servers instantly.",
     },
     {
       question: "Is my data secure?",
-      answer: "Absolutely. We do not store your datasets after the training process is complete. All data processing is done securely.",
+      answer: "Absolutely. We do not store your datasets after the training process is complete. All data processing is done securely in memory and discarded immediately.",
     },
   ];
 
   return (
-    <section id="faq" className={cn("py-24 bg-background", className)}>
-      <div className="max-w-3xl mx-auto px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
-            Frequently Asked Questions
+    <section id="faq" className={cn("py-32 bg-background relative", className)}>
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-secondary/20 pointer-events-none" />
+      
+      <div className="max-w-3xl mx-auto px-6 relative z-10">
+        <div className="text-center mb-20">
+          <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
+            Questions? <br />
+            <span className="text-muted-foreground">We have answers.</span>
           </h2>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-2">
           {faqs.map((faq, idx) => (
             <FaqItem key={idx} question={faq.question} answer={faq.answer} />
           ))}
@@ -48,13 +51,15 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
   const [isOpen, setIsOpen] = React.useState(false);
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden bg-card">
+    <div className="border-b border-border/50 last:border-0 overflow-hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-4 md:p-6 text-left hover:bg-muted/50 transition-colors focus:outline-none"
+        className="w-full flex items-center justify-between py-6 text-left focus:outline-none group"
       >
-        <span className="font-semibold text-base md:text-lg">{question}</span>
-        <ChevronDown className={cn("w-5 h-5 text-muted-foreground transition-transform duration-300", isOpen && "rotate-180")} />
+        <span className="font-medium text-lg md:text-xl group-hover:text-primary transition-colors">{question}</span>
+        <div className={cn("w-8 h-8 rounded-full bg-secondary flex items-center justify-center transition-transform duration-300", isOpen && "rotate-45 bg-primary/10 text-primary")}>
+          <Plus className="w-4 h-4" />
+        </div>
       </button>
       <AnimatePresence>
         {isOpen && (
@@ -62,9 +67,9 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="p-4 md:p-6 pt-0 text-muted-foreground border-t border-border">
+            <div className="pb-6 text-muted-foreground text-lg leading-relaxed">
               {answer}
             </div>
           </motion.div>
