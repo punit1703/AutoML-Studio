@@ -4,7 +4,7 @@ import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Terminal, Loader2, CheckCircle2 } from "lucide-react";
+import { Terminal, Loader2, CheckCircle2, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -13,6 +13,7 @@ export default function LoginPage() {
   
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false);
   
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
@@ -48,7 +49,7 @@ export default function LoginPage() {
       
       // Redirect after success animation
       setTimeout(() => {
-        router.push("/");
+        router.push("/studio/dashboard");
       }, 1500);
     }, 1500);
   };
@@ -112,18 +113,27 @@ export default function LoginPage() {
             <motion.div
               animate={passwordError ? { x: [-10, 10, -10, 10, 0] } : {}}
               transition={{ duration: 0.4 }}
+              className="relative"
             >
               <Input
                 id="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`bg-[#18181b] border-white/10 text-foreground font-mono placeholder:text-muted-foreground/50 focus:border-primary focus:ring-primary/20 transition-all ${
+                className={`bg-[#18181b] border-white/10 text-foreground font-mono placeholder:text-muted-foreground/50 focus:border-primary focus:ring-primary/20 transition-all pr-10 ${
                   passwordError ? "border-error focus:border-error focus:ring-error/20" : ""
                 }`}
                 disabled={isSubmitting || isSuccess}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                disabled={isSubmitting || isSuccess}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </motion.div>
           </div>
 
