@@ -224,7 +224,7 @@ export default function DataPreprocessingPage() {
                         <option value="impute_median">Impute Median</option>
                         <option value="impute_constant">Impute Constant (0 / 'Unknown')</option>
                         <option value="drop_rows">Drop Rows with Missing Values</option>
-                        <option value="drop_cols">Drop Columns (>50% missing)</option>
+                        <option value="drop_cols">Drop Columns (&gt;50% missing)</option>
                       </select>
                     </div>
                   </div>
