@@ -130,7 +130,7 @@ class ModelTrainingEngine:
             try:
                 if param_grid:
                     search = RandomizedSearchCV(base_model, param_distributions=param_grid, 
-                                                n_iter=5, cv=cv_splitter, n_jobs=-1, random_state=42)
+                                                n_iter=5, cv=cv_splitter, n_jobs=None, random_state=42)
                     search.fit(X_train, y_train)
                     model = search.best_estimator_
                     cv_score = search.best_score_

@@ -294,10 +294,21 @@ export default function DatasetAnalysisPage() {
     </Card>
   );
 
-  const renderSuggestions = () => (
+  const renderSuggestions = () => {
+    const dynamicTargetSuggestions = Object.entries(analysis.suggested_targets || {}).map(([col, conf]: any) => {
+      const type = analysis.data_types?.[col] || 'unknown';
+      const task = type === 'numerical' ? 'Regression' : 'Classification';
+      return {
+        column: col,
+        task: task,
+        confidence: `${conf}%`
+      };
+    });
+
+    return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {targetSuggestionsData.map((sug, i) => (
+        {dynamicTargetSuggestions.map((sug, i) => (
           <Card key={i} className="bg-white/5 border-white/10 relative overflow-hidden group hover:border-primary/50 transition-colors">
             <div className="absolute top-0 right-0 p-4">
               <div className="flex flex-col items-end">
@@ -352,7 +363,7 @@ export default function DatasetAnalysisPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {targetSuggestionsData.map((row, i) => (
+              {dynamicTargetSuggestions.map((row, i) => (
                 <tr key={i} className="hover:bg-white/5 transition-colors">
                   <td className="px-6 py-4 font-medium text-white">{row.column}</td>
                   <td className="px-6 py-4">
@@ -384,7 +395,8 @@ export default function DatasetAnalysisPage() {
         </div>
       </Card>
     </div>
-  );
+    );
+  };
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
