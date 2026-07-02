@@ -25,27 +25,23 @@ class NotebookGenerator:
         }
 
     def generate(self) -> str:
-        # Resolve dataset path if it's absolute, to something portable or keep it as is.
-        # For simplicity, we just use the provided path, or standard relative path if they put the notebook near data.
         filename = "reproducible_pipeline.ipynb"
         output_path = os.path.join(self.output_dir, filename)
         
         cells = []
         
-        cells.append(self._create_markdown_cell("# AutoML Studio - Reproducible Pipeline\nThis notebook contains the steps for loading your dataset, preprocessing it, training a baseline model, and exporting the results."))
+        cells.append(self._create_markdown_cell("# AutoML Studio - Educational Pipeline\nWelcome to your reproducible AutoML notebook! This document is designed to not only train your model but explain *why* each step is taken. You can run this notebook locally to experiment with the baseline model."))
         
-        cells.append(self._create_code_cell("import pandas as pd\nimport numpy as np\nimport matplotlib.pyplot as plt\nimport seaborn as sns\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.metrics import mean_squared_error, r2_score, accuracy_score, f1_score\nfrom sklearn.preprocessing import LabelEncoder\nfrom sklearn.ensemble import RandomForestRegressor, RandomForestClassifier\nimport joblib"))
+        cells.append(self._create_code_cell("import pandas as pd\nimport numpy as np\nimport matplotlib.pyplot as plt\nimport seaborn as sns\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.metrics import mean_squared_error, r2_score, accuracy_score, f1_score\nfrom sklearn.preprocessing import LabelEncoder\nfrom sklearn.ensemble import RandomForestRegressor, RandomForestClassifier\nimport joblib\nimport shap"))
         
-        # Load dataset
-        cells.append(self._create_markdown_cell("## 1. Data Loading"))
+        cells.append(self._create_markdown_cell("## 1. Data Loading\nFirst, we load the dataset into a pandas DataFrame. Inspecting the first few rows helps verify that the data parsed correctly."))
         
         load_code = f"dataset_path = r'{self.dataset_path}'\n" \
                     f"df = pd.read_csv(dataset_path)\n" \
                     f"df.head()"
         cells.append(self._create_code_cell(load_code))
         
-        # Preprocessing
-        cells.append(self._create_markdown_cell("## 2. Preprocessing\nAutomatically dropping missing targets and filling numeric NaNs with the mean. Non-numeric columns are dropped for this baseline."))
+        cells.append(self._create_markdown_cell("## 2. Target Isolation & Preprocessing\nMachine learning models require a target variable to predict (`y`) and features to learn from (`X`). We must also handle missing values, as most algorithms cannot process NaNs natively.\n\nHere, we use a simple mean imputation strategy for continuous variables."))
         
         prep_code = f"target_col = '{self.target_column}'\n" \
                     f"X = df.drop(columns=[target_col])\n" \
@@ -57,15 +53,15 @@ class NotebookGenerator:
                     f"X = X.loc[valid_idx]\n" \
                     f"y = y.loc[valid_idx]\n\n" \
                     f"X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)\n" \
-                    f"print(f'Training shape: {{X_train.shape}}, Testing shape: {{X_test.shape}}')"
+                    f"print(f'Training features shape: {{X_train.shape}}')\n" \
+                    f"print(f'Testing features shape: {{X_test.shape}}')"
         cells.append(self._create_code_cell(prep_code))
         
-        # Model Training & Evaluation
-        cells.append(self._create_markdown_cell("## 3. Model Training & Evaluation\nAutomatically detects regression or classification and trains a Random Forest model."))
+        cells.append(self._create_markdown_cell("## 3. Model Training\nWe train a baseline Random Forest model. Random Forests are powerful, robust to outliers, and handle non-linear relationships well without extensive feature scaling."))
         
         train_code = "if pd.api.types.is_numeric_dtype(y) and y.nunique() > 20:\n" \
                      "    print('Task: Regression')\n" \
-                     "    model = RandomForestRegressor(random_state=42)\n" \
+                     "    model = RandomForestRegressor(n_estimators=100, random_state=42)\n" \
                      "    model.fit(X_train, y_train)\n" \
                      "    preds = model.predict(X_test)\n" \
                      "    print(f'R2 Score: {r2_score(y_test, preds):.4f}')\n" \
@@ -74,14 +70,23 @@ class NotebookGenerator:
                      "    le = LabelEncoder()\n" \
                      "    y_train = le.fit_transform(y_train)\n" \
                      "    y_test = le.transform(y_test)\n" \
-                     "    model = RandomForestClassifier(random_state=42)\n" \
+                     "    model = RandomForestClassifier(n_estimators=100, random_state=42)\n" \
                      "    model.fit(X_train, y_train)\n" \
                      "    preds = model.predict(X_test)\n" \
                      "    print(f'Accuracy: {accuracy_score(y_test, preds):.4f}')"
         cells.append(self._create_code_cell(train_code))
         
-        # Model Export
-        cells.append(self._create_markdown_cell("## 4. Model Export"))
+        cells.append(self._create_markdown_cell("## 4. Explainability (SHAP)\nModel predictions shouldn't be a black box. We use SHAP (SHapley Additive exPlanations) to interpret the impact of each feature on the model's output."))
+        
+        shap_code = "try:\n" \
+                    "    explainer = shap.TreeExplainer(model)\n" \
+                    "    shap_values = explainer.shap_values(X_test)\n" \
+                    "    shap.summary_plot(shap_values, X_test)\n" \
+                    "except Exception as e:\n" \
+                    "    print(f'SHAP visualization skipped: {e}')"
+        cells.append(self._create_code_cell(shap_code))
+        
+        cells.append(self._create_markdown_cell("## 5. Model Export\nFinally, we serialize the model to disk so it can be deployed into production systems."))
         
         export_code = "joblib.dump(model, 'best_model.joblib')\n" \
                       "print('Model saved successfully as best_model.joblib')"

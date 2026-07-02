@@ -27,27 +27,32 @@ class ReportGenerator:
         
         # Title
         title_style = styles['Title']
-        elements.append(Paragraph("AutoML Studio - Evaluation Report", title_style))
+        elements.append(Paragraph("AutoML Studio - Comprehensive Evaluation Report", title_style))
         elements.append(Spacer(1, 20))
         
         # Overview
         h2_style = styles['Heading2']
-        elements.append(Paragraph("1. Overview", h2_style))
+        elements.append(Paragraph("1. Overview & Recommendations", h2_style))
         problem_type = self.evaluation_results.get('problem_type', 'Unknown')
         best_model = self.evaluation_results.get('best_model', 'None')
+        recommendation_reason = self.evaluation_results.get('recommendation_reason', 'Top performance.')
         
-        overview_text = f"This report summarizes the evaluation of machine learning models trained on your dataset. The detected problem type is <b>{problem_type.title()}</b>. Based on the evaluation metrics, the best performing model is <b>{best_model}</b>."
+        overview_text = f"This report summarizes the evaluation of machine learning models trained on your dataset. The detected problem type is <b>{problem_type.title()}</b>."
         elements.append(Paragraph(overview_text, styles['Normal']))
+        elements.append(Spacer(1, 10))
+        
+        rec_text = f"<b>Recommended Model:</b> {best_model}<br/><b>Reasoning:</b> {recommendation_reason}"
+        elements.append(Paragraph(rec_text, styles['Normal']))
         elements.append(Spacer(1, 15))
         
         # Metrics Table
-        elements.append(Paragraph("2. Model Comparison", h2_style))
+        elements.append(Paragraph("2. Model Comparison Matrix", h2_style))
         
         results = self.evaluation_results.get('evaluation_results', [])
         
         if results:
             if problem_type == 'regression':
-                headers = ['Rank', 'Model Name', 'R-Squared', 'RMSE', 'MAE']
+                headers = ['Rank', 'Model Name', 'R-Squared', 'RMSE', 'Latency (s)']
                 data = [headers]
                 for res in results:
                     metrics = res.get('metrics', {})
@@ -56,11 +61,11 @@ class ReportGenerator:
                         res.get('model_name', 'Unknown'),
                         f"{metrics.get('r2', 0):.4f}",
                         f"{metrics.get('rmse', 0):.4f}",
-                        f"{metrics.get('mae', 0):.4f}"
+                        f"{res.get('inference_time', 0):.4f}"
                     ]
                     data.append(row)
             else:
-                headers = ['Rank', 'Model Name', 'Accuracy', 'F1 Score', 'Precision', 'Recall']
+                headers = ['Rank', 'Model Name', 'Accuracy', 'F1 Score', 'Latency (s)']
                 data = [headers]
                 for res in results:
                     metrics = res.get('metrics', {})
@@ -69,14 +74,13 @@ class ReportGenerator:
                         res.get('model_name', 'Unknown'),
                         f"{metrics.get('accuracy', 0):.4f}",
                         f"{metrics.get('f1', 0):.4f}",
-                        f"{metrics.get('precision', 0):.4f}",
-                        f"{metrics.get('recall', 0):.4f}"
+                        f"{res.get('inference_time', 0):.4f}"
                     ]
                     data.append(row)
                     
             table = Table(data, hAlign='LEFT')
             table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2A3F54')),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
@@ -89,12 +93,34 @@ class ReportGenerator:
             
         elements.append(Spacer(1, 20))
         
+        # Feature Importance
+        elements.append(Paragraph("3. Feature Importance (Best Model)", h2_style))
+        best_result = next((r for r in results if r.get('model_name') == best_model), None)
+        if best_result and best_result.get('feature_importance'):
+            fi = best_result['feature_importance']
+            fi_data = [['Feature', 'Importance Score']]
+            for feat, score in fi.items():
+                fi_data.append([feat, f"{score:.4f}"])
+                
+            fi_table = Table(fi_data, hAlign='LEFT')
+            fi_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#17A2B8')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ]))
+            elements.append(fi_table)
+        else:
+            elements.append(Paragraph("Feature importance could not be extracted for the selected model.", styles['Normal']))
+
+        elements.append(Spacer(1, 20))
+        
         # Conclusion
-        elements.append(Paragraph("3. Conclusion", h2_style))
-        conclusion = "The models have been ranked based on primary evaluation metrics (R2 for regression, Accuracy/F1 for classification). You can export the best model to make predictions on new data."
+        elements.append(Paragraph("4. Conclusion", h2_style))
+        conclusion = "The pipeline successfully processed the data, evaluated multiple algorithms via Cross-Validation, and identified the best performing model. The model is now ready for deployment."
         elements.append(Paragraph(conclusion, styles['Normal']))
         
-        # Build PDF
         doc.build(elements)
         
         return filename
