@@ -37,7 +37,9 @@ class DataPreprocessingEngine:
         self.df.reset_index(drop=True, inplace=True)
         return self
         
-    def encode_labels(self, columns):
+    def encode_labels(self, columns=None):
+        if columns is None:
+            columns = self.df.select_dtypes(include=['object', 'category']).columns.tolist()
         if columns:
             for col in columns:
                 if col in self.df.columns:
@@ -45,7 +47,9 @@ class DataPreprocessingEngine:
                     self.df[col] = le.fit_transform(self.df[col].astype(str))
         return self
         
-    def encode_one_hot(self, columns):
+    def encode_one_hot(self, columns=None):
+        if columns is None:
+            columns = self.df.select_dtypes(include=['object', 'category']).columns.tolist()
         if columns:
             existing_cols = [col for col in columns if col in self.df.columns]
             if existing_cols:

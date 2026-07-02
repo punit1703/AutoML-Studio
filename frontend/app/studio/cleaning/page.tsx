@@ -83,12 +83,36 @@ export default function DataPreprocessingPage() {
     setCurrentAction("Initializing preprocessing engine...");
     
     try {
-      const config = {
-        missing_values: steps.missingValues.enabled ? steps.missingValues.strategy : 'none',
-        encoding: steps.encoding.enabled ? steps.encoding.strategy : 'none',
-        scaling: steps.scaling.enabled ? steps.scaling.strategy : 'none',
-        outliers: steps.outliers.enabled ? steps.outliers.strategy : 'none'
-      };
+      const config: any = {};
+      
+      if (steps.missingValues.enabled) {
+        let strategy = 'mean';
+        if (steps.missingValues.strategy === 'impute_median') strategy = 'median';
+        if (steps.missingValues.strategy === 'impute_constant') strategy = 'constant';
+        if (steps.missingValues.strategy === 'drop_rows') strategy = 'drop';
+        config.missing_values = { strategy, fill_value: 0 };
+      }
+      
+      if (steps.encoding.enabled) {
+        if (steps.encoding.strategy === 'one_hot' || steps.encoding.strategy === 'auto') {
+          config.encode_one_hot = {};
+        } else {
+          config.encode_labels = {};
+        }
+      }
+      
+      if (steps.scaling.enabled) {
+        let method = 'standard';
+        if (steps.scaling.strategy === 'minmax') method = 'min_max';
+        if (steps.scaling.strategy === 'robust') method = 'robust';
+        config.scale = { method };
+      }
+      
+      if (steps.outliers.enabled) {
+        let action = 'clip';
+        if (steps.outliers.strategy === 'drop') action = 'drop';
+        config.outliers = { action, method: 'iqr' };
+      }
       
       // Simulate progress bar while waiting for the real backend API to finish
       let p = 0;
