@@ -7,9 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Code2, Loader2, CheckCircle2, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import api from "@/lib/api";
+import { useAppContext } from "@/context/AppContext";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { setToken } = useAppContext();
   
   const [name, setName] = React.useState("");
   const [email, setEmail] = React.useState("");
@@ -24,7 +27,7 @@ export default function RegisterPage() {
   const [emailError, setEmailError] = React.useState(false);
   const [passwordError, setPasswordError] = React.useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     let hasError = false;
@@ -49,17 +52,35 @@ export default function RegisterPage() {
 
     if (hasError) return;
 
-    // Simulate backend auth
     setIsSubmitting(true);
-    setTimeout(() => {
+    try {
+      await api.post('auth/register/', { 
+        first_name: name, 
+        email, 
+        password,
+        password_confirm: password
+      });
+      // Auto login after registration
+      const loginRes = await api.post('auth/login/', { email, password });
+      setToken(loginRes.data.access);
+      
       setIsSubmitting(false);
       setIsSuccess(true);
       
-      // Redirect after success animation
       setTimeout(() => {
-        router.push("/studio/dashboard");
+        router.push("/studio/upload");
       }, 1500);
-    }, 1500);
+    } catch (err) {
+      setIsSubmitting(false);
+      setNameError(true);
+      setEmailError(true);
+      setPasswordError(true);
+      setTimeout(() => {
+        setNameError(false);
+        setEmailError(false);
+        setPasswordError(false);
+      }, 500);
+    }
   };
 
   return (

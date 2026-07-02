@@ -5,14 +5,19 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { UploadCloud, FileType, CheckCircle2, Loader2, Table as TableIcon, ArrowRight, Play } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import api from "@/lib/api";
+import { useAppContext } from "@/context/AppContext";
 
 type UploadState = "idle" | "dragging" | "uploading" | "success" | "preview";
 
 export default function DatasetUploadPage() {
   const router = useRouter();
+  const { projectId, setProjectId, setDatasetId } = useAppContext();
   const [uploadState, setUploadState] = React.useState<UploadState>("idle");
   const [uploadProgress, setUploadProgress] = React.useState(0);
   const [fileDetails, setFileDetails] = React.useState<{ name: string; size: string } | null>(null);
+  const [previewColumns, setPreviewColumns] = React.useState<string[]>([]);
+  const [previewData, setPreviewData] = React.useState<any[]>([]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -41,28 +46,60 @@ export default function DatasetUploadPage() {
     }
   };
 
-  const processFile = (file: File) => {
-    // Format size
+  const processFile = async (file: File) => {
     const size = (file.size / (1024 * 1024)).toFixed(2) + " MB";
     setFileDetails({ name: file.name, size });
-    simulateUpload();
-  };
-
-  const simulateUpload = () => {
+    
     setUploadState("uploading");
-    setUploadProgress(0);
+    setUploadProgress(10);
 
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setUploadState("success");
-          setTimeout(() => setUploadState("preview"), 1500);
-          return 100;
+    try {
+      let currentProjectId = projectId;
+      
+      if (!currentProjectId) {
+        const projRes = await api.post('v1/projects/', {
+          title: "Default AutoML Project",
+          description: "Auto-generated project"
+        });
+        currentProjectId = projRes.data.id;
+        setProjectId(currentProjectId);
+      }
+      
+      setUploadProgress(30);
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('project_id', currentProjectId!);
+      
+      const uploadRes = await api.post('v1/datasets/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 100));
+          setUploadProgress(30 + (percentCompleted * 0.6));
         }
-        return prev + 5; // Simulate chunk upload
       });
-    }, 100);
+      
+      const newDatasetId = uploadRes.data.id;
+      setDatasetId(newDatasetId);
+      setUploadProgress(100);
+      setUploadState("success");
+      
+      // Fetch preview
+      const previewRes = await api.get(`v1/datasets/${newDatasetId}/preview/?rows=5`);
+      const preview = previewRes.data.preview;
+      if (preview && preview.length > 0) {
+        setPreviewColumns(Object.keys(preview[0]));
+        setPreviewData(preview);
+      }
+      
+      setTimeout(() => setUploadState("preview"), 1500);
+    } catch (error) {
+      console.error("Upload failed", error);
+      setUploadState("idle");
+      alert("Upload failed. Ensure you are logged in.");
+    }
   };
 
   const resetUpload = () => {
@@ -233,26 +270,17 @@ export default function DatasetUploadPage() {
                 <table className="w-full text-sm text-left">
                   <thead className="text-xs text-muted-foreground uppercase bg-white/[0.02] border-b border-white/10 font-mono">
                     <tr>
-                      <th className="px-6 py-3 font-medium">customerID</th>
-                      <th className="px-6 py-3 font-medium">gender</th>
-                      <th className="px-6 py-3 font-medium">tenure</th>
-                      <th className="px-6 py-3 font-medium">MonthlyCharges</th>
-                      <th className="px-6 py-3 font-medium">TotalCharges</th>
-                      <th className="px-6 py-3 font-medium">Churn</th>
+                      {previewColumns.map((col, i) => (
+                        <th key={i} className="px-6 py-3 font-medium">{col}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5 font-mono text-muted-foreground">
-                    {[
-                      ["7590-VHVEG", "Female", "1", "29.85", "29.85", "No"],
-                      ["5575-GNVDE", "Male", "34", "56.95", "1889.5", "No"],
-                      ["3668-QPYBK", "Male", "2", "53.85", "108.15", "Yes"],
-                      ["7795-CFOCW", "Male", "45", "42.3", "1840.75", "No"],
-                      ["9237-HQITU", "Female", "2", "70.7", "151.65", "Yes"],
-                    ].map((row, i) => (
+                    {previewData.map((row, i) => (
                       <tr key={i} className="hover:bg-white/[0.02] transition-colors">
-                        {row.map((cell, j) => (
-                          <td key={j} className={`px-6 py-4 ${j === 5 ? (cell === "Yes" ? "text-error" : "text-success") : "text-white"}`}>
-                            {cell}
+                        {previewColumns.map((col, j) => (
+                          <td key={j} className="px-6 py-4 text-white">
+                            {row[col] !== null ? String(row[col]) : "null"}
                           </td>
                         ))}
                       </tr>

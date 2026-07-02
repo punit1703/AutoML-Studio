@@ -1,22 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Toast } from "@/components/ui/toast";
 import { 
-  Download, 
-  FileJson, 
   FileText, 
   Package, 
   Image as ImageIcon,
   Loader2,
   CheckCircle2,
   Terminal,
-  FileCode2,
   HardDriveDownload
 } from "lucide-react";
+import api from "@/lib/api";
+import { useAppContext } from "@/context/AppContext";
 
 type ExportType = "notebook" | "pdf" | "model" | "charts";
 
@@ -38,7 +36,7 @@ const downloadItems: DownloadItem[] = [
     description: "Export the entire AutoML pipeline including data preprocessing, feature engineering, and model training code.",
     icon: Terminal,
     format: ".ipynb",
-    size: "45 KB",
+    size: "Dynamic",
     color: "text-amber-500",
     bg: "bg-amber-500/10"
   },
@@ -48,7 +46,7 @@ const downloadItems: DownloadItem[] = [
     description: "A comprehensive PDF document containing all dataset statistics, distribution charts, and model performance metrics.",
     icon: FileText,
     format: ".pdf",
-    size: "2.4 MB",
+    size: "Dynamic",
     color: "text-rose-500",
     bg: "bg-rose-500/10"
   },
@@ -58,19 +56,9 @@ const downloadItems: DownloadItem[] = [
     description: "Serialized winning model along with the preprocessing transformers, ready for production deployment.",
     icon: Package,
     format: ".pkl",
-    size: "14.8 MB",
+    size: "Dynamic",
     color: "text-emerald-500",
     bg: "bg-emerald-500/10"
-  },
-  {
-    id: "charts",
-    title: "Diagnostic Charts",
-    description: "High-resolution PNG exports of all diagnostic charts including ROC curves and Confusion Matrices.",
-    icon: ImageIcon,
-    format: ".zip",
-    size: "4.2 MB",
-    color: "text-blue-500",
-    bg: "bg-blue-500/10"
   }
 ];
 
@@ -88,30 +76,75 @@ const itemVariants = {
 };
 
 export default function DownloadsPage() {
+  const { datasetId } = useAppContext();
   const [downloading, setDownloading] = useState<Record<string, boolean>>({});
   const [toasts, setToasts] = useState<{ id: string; title: string; description: string }[]>([]);
+  
+  const [targetColumn, setTargetColumn] = useState("");
+  const [bestModel, setBestModel] = useState("");
 
-  const handleDownload = (item: DownloadItem) => {
-    // Set downloading state
+  useEffect(() => {
+    if (datasetId) {
+      api.get(`v1/datasets/${datasetId}/analyze/`).then(res => {
+        const numCols = res.data.numerical_columns || [];
+        const catCols = res.data.categorical_columns || [];
+        const allCols = [...numCols, ...catCols];
+        
+        let target = "";
+        const suggested = res.data.suggested_targets || [];
+        if (suggested.length > 0) {
+          target = suggested[0];
+        } else if (allCols.length > 0) {
+          target = allCols[allCols.length - 1];
+        }
+        setTargetColumn(target);
+        
+        if (target) {
+          api.post(`v1/datasets/${datasetId}/evaluate/`, { target_column: target }).then(evalRes => {
+             setBestModel(evalRes.data.best_model || "");
+          }).catch(console.error);
+        }
+      }).catch(console.error);
+    }
+  }, [datasetId]);
+
+  const handleDownload = async (item: DownloadItem) => {
+    if (!datasetId) {
+      alert("No dataset selected");
+      return;
+    }
+    
     setDownloading(prev => ({ ...prev, [item.id]: true }));
 
-    // Simulate download delay
-    setTimeout(() => {
-      setDownloading(prev => ({ ...prev, [item.id]: false }));
+    try {
+      if (item.id === "notebook") {
+        await api.post(`v1/datasets/${datasetId}/generate_notebook/`, { target_column: targetColumn || "target" });
+        window.open(`http://localhost:8000/api/v1/datasets/${datasetId}/download_notebook/`, "_blank");
+      } else if (item.id === "pdf") {
+        await api.post(`v1/datasets/${datasetId}/generate_report/`, { target_column: targetColumn || "target" });
+        window.open(`http://localhost:8000/api/v1/datasets/${datasetId}/download_report/`, "_blank");
+      } else if (item.id === "model") {
+        const modelName = bestModel || "Unknown";
+        window.open(`http://localhost:8000/api/v1/datasets/${datasetId}/download_model/?model_name=${modelName}`, "_blank");
+      }
       
-      // Add success toast
       const toastId = Math.random().toString(36).substring(7);
       setToasts(prev => [...prev, {
         id: toastId,
-        title: "Download Complete",
-        description: `Successfully downloaded ${item.title} (${item.format}).`
+        title: "Download Started",
+        description: `Successfully initiated download for ${item.title}.`
       }]);
 
-      // Remove toast after 3 seconds
       setTimeout(() => {
         setToasts(prev => prev.filter(t => t.id !== toastId));
       }, 3000);
-    }, 1500);
+      
+    } catch (err) {
+      console.error(err);
+      alert("Download failed. Check console for details.");
+    } finally {
+      setDownloading(prev => ({ ...prev, [item.id]: false }));
+    }
   };
 
   const removeToast = (id: string) => {
@@ -152,41 +185,36 @@ export default function DownloadsPage() {
           
           return (
             <motion.div key={item.id} variants={itemVariants}>
-              <Card className="bg-[#09090b] border-white/10 h-full hover:border-primary/50 transition-colors group relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+              <Card className="bg-[#09090b] border-white/10 h-full flex flex-col hover:border-white/20 transition-colors">
                 <CardContent className="p-6 flex flex-col h-full">
                   <div className="flex items-start justify-between mb-4">
-                    <div className={`p-3 rounded-xl border border-white/10 ${item.bg}`}>
-                      <Icon className={`w-6 h-6 ${item.color}`} />
+                    <div className={`p-3 rounded-xl ${item.bg} ${item.color}`}>
+                      <Icon className="w-6 h-6" />
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm font-mono text-white font-medium bg-white/5 px-2 py-1 rounded-md border border-white/10">
-                        {item.format}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-2">{item.size}</div>
+                    <div className="text-xs font-medium px-2 py-1 bg-white/5 rounded text-muted-foreground">
+                      {item.format}
                     </div>
                   </div>
                   
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-white mb-2 group-hover:text-primary transition-colors">{item.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {item.description}
-                    </p>
-                  </div>
+                  <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground flex-1 mb-6">
+                    {item.description}
+                  </p>
                   
-                  <div className="mt-6 pt-6 border-t border-white/10">
+                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
+                    <span className="text-xs text-muted-foreground">{item.size}</span>
                     <Button 
-                      onClick={() => handleDownload(item)} 
-                      disabled={isDownloading}
-                      className={`w-full font-medium ${isDownloading ? 'bg-primary/50 cursor-not-allowed' : 'bg-white/10 hover:bg-primary text-white hover:text-black border border-white/10 hover:border-primary shadow-[0_0_15px_rgba(56,189,248,0)] hover:shadow-[0_0_15px_rgba(56,189,248,0.5)] transition-all'}`}
+                      onClick={() => handleDownload(item)}
+                      disabled={isDownloading || !datasetId}
+                      className={`min-w-[120px] shadow-[0_0_15px_rgba(255,255,255,0.1)]`}
                     >
                       {isDownloading ? (
                         <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Preparing File...
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Preparing...
                         </>
                       ) : (
                         <>
-                          <Download className="w-4 h-4 mr-2" /> Download
+                          Download <HardDriveDownload className="w-4 h-4 ml-2" />
                         </>
                       )}
                     </Button>
@@ -194,21 +222,35 @@ export default function DownloadsPage() {
                 </CardContent>
               </Card>
             </motion.div>
-          )
+          );
         })}
       </motion.div>
 
-      {/* Toast Notification Container */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+      {/* Toast Container */}
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
         <AnimatePresence>
           {toasts.map((toast) => (
-            <Toast
+            <motion.div
               key={toast.id}
-              title={toast.title}
-              description={toast.description}
-              variant="success"
-              onClose={() => removeToast(toast.id)}
-            />
+              initial={{ opacity: 0, y: 20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+              className="bg-black border border-white/10 p-4 rounded-lg shadow-xl w-80 pointer-events-auto flex items-start gap-3"
+            >
+              <div className="mt-0.5">
+                <CheckCircle2 className="w-5 h-5 text-success" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-white">{toast.title}</h4>
+                <p className="text-xs text-muted-foreground mt-1">{toast.description}</p>
+              </div>
+              <button 
+                onClick={() => removeToast(toast.id)}
+                className="text-muted-foreground hover:text-white"
+              >
+                &times;
+              </button>
+            </motion.div>
           ))}
         </AnimatePresence>
       </div>

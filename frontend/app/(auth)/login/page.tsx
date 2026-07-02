@@ -7,9 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Terminal, Loader2, CheckCircle2, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import api from "@/lib/api";
+import { useAppContext } from "@/context/AppContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { setToken } = useAppContext();
   
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -22,7 +25,7 @@ export default function LoginPage() {
   const [emailError, setEmailError] = React.useState(false);
   const [passwordError, setPasswordError] = React.useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     let hasError = false;
@@ -41,17 +44,26 @@ export default function LoginPage() {
 
     if (hasError) return;
 
-    // Simulate backend auth
     setIsSubmitting(true);
-    setTimeout(() => {
+    try {
+      // It looks like Django auth uses username for simplejwt by default if not custom user model.
+      // Assuming custom user model with email or they pass email as username.
+      const res = await api.post('auth/login/', { email, password });
+      setToken(res.data.access);
       setIsSubmitting(false);
       setIsSuccess(true);
-      
-      // Redirect after success animation
       setTimeout(() => {
-        router.push("/studio/dashboard");
+        router.push("/studio/upload"); // Redirecting straight to upload for flow
       }, 1500);
-    }, 1500);
+    } catch (err) {
+      setIsSubmitting(false);
+      setEmailError(true);
+      setPasswordError(true);
+      setTimeout(() => {
+        setEmailError(false);
+        setPasswordError(false);
+      }, 500);
+    }
   };
 
   return (

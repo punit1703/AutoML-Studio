@@ -19,6 +19,8 @@ import {
   ArrowRight
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import api from "@/lib/api";
+import { useAppContext } from "@/context/AppContext";
 
 // Available Algorithms Mock
 const AVAILABLE_ALGORITHMS = [
@@ -30,14 +32,35 @@ const AVAILABLE_ALGORITHMS = [
 
 export default function ModelTrainingPage() {
   const router = useRouter();
+  const { datasetId } = useAppContext();
   const [selectedAlgos, setSelectedAlgos] = useState<string[]>(["rf", "xgb", "lgb"]);
   
-  // State: "idle" | "running" | "completed"
+  const [columns, setColumns] = useState<string[]>([]);
+  const [targetColumn, setTargetColumn] = useState<string>("");
+  
   const [trainingState, setTrainingState] = useState<"idle" | "running" | "completed">("idle");
   const [currentAlgoIndex, setCurrentAlgoIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [logs, setLogs] = useState<string[]>(["[SYSTEM] AutoML Engine initialized and ready."]);
   const logsEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (datasetId) {
+      api.get(`v1/datasets/${datasetId}/analyze/`).then(res => {
+        const numCols = res.data.numerical_columns || [];
+        const catCols = res.data.categorical_columns || [];
+        const allCols = [...numCols, ...catCols];
+        setColumns(allCols);
+        
+        const suggested = res.data.suggested_targets || [];
+        if (suggested.length > 0) {
+          setTargetColumn(suggested[0]);
+        } else if (allCols.length > 0) {
+          setTargetColumn(allCols[allCols.length - 1]);
+        }
+      }).catch(err => console.error(err));
+    }
+  }, [datasetId]);
 
   // Auto-scroll logs
   useEffect(() => {
@@ -58,53 +81,49 @@ export default function ModelTrainingPage() {
     setLogs(prev => [...prev, `[${timestamp}] ${msg}`]);
   };
 
-  const startTraining = () => {
-    if (selectedAlgos.length === 0) {
-      addLog("[ERROR] No algorithms selected for training.");
+  const startTraining = async () => {
+    if (!datasetId) {
+      alert("No dataset selected");
+      return;
+    }
+    if (!targetColumn) {
+      alert("Please select a target column");
       return;
     }
     
     setTrainingState("running");
     setProgress(0);
     setCurrentAlgoIndex(0);
-    setLogs(["[SYSTEM] AutoML Engine initialized.", "[SYSTEM] Starting Model Training Pipeline..."]);
+    setLogs([`[SYSTEM] AutoML Engine initialized.`, `[SYSTEM] Starting Model Training on target: ${targetColumn}...`]);
 
-    let currentIdx = 0;
     let currentProgress = 0;
-    
-    const totalSteps = selectedAlgos.length * 20; // 20 steps per algorithm
-    
     const interval = setInterval(() => {
-      currentProgress++;
-      const overallPercentage = Math.floor((currentProgress / totalSteps) * 100);
-      setProgress(overallPercentage);
-      
-      const algoId = selectedAlgos[currentIdx];
-      const algoName = AVAILABLE_ALGORITHMS.find(a => a.id === algoId)?.name;
-      
-      const stepInAlgo = currentProgress - (currentIdx * 20);
-      
-      if (stepInAlgo === 1) {
-        addLog(`[INFO] 🚀 Starting training for ${algoName}...`);
-      } else if (stepInAlgo % 4 === 0 && stepInAlgo < 20) {
-        const loss = (Math.random() * 0.5 + 0.1).toFixed(4);
-        const acc = (Math.random() * 10 + 80).toFixed(2);
-        addLog(`[${algoName}] Epoch ${stepInAlgo * 5}/100 - Loss: ${loss} - Accuracy: ${acc}%`);
-      } else if (stepInAlgo === 20) {
-        addLog(`[SUCCESS] ✅ ${algoName} training completed successfully.`);
-        currentIdx++;
-        if (currentIdx < selectedAlgos.length) {
-          setCurrentAlgoIndex(currentIdx);
-        } else {
-          // All done
-          clearInterval(interval);
-          setTrainingState("completed");
-          setProgress(100);
-          addLog("[SYSTEM] 🎉 All models trained successfully! Pipeline finished.");
+      currentProgress += 2;
+      if (currentProgress <= 90) {
+        setProgress(currentProgress);
+        if (currentProgress % 10 === 0) {
+           addLog(`[SYSTEM] Training in progress... (${currentProgress}%)`);
         }
       }
+    }, 500);
+
+    try {
+      await api.post(`v1/datasets/${datasetId}/train/`, {
+        target_column: targetColumn
+      });
       
-    }, 400); // adjust speed of simulation here
+      clearInterval(interval);
+      setProgress(100);
+      setTrainingState("completed");
+      addLog("[SUCCESS] ✅ Training completed successfully.");
+      addLog("[SYSTEM] 🎉 All models trained successfully! Pipeline finished.");
+    } catch (err) {
+      console.error(err);
+      clearInterval(interval);
+      setTrainingState("idle");
+      addLog("[ERROR] ❌ Training failed. Check server logs.");
+      alert("Training failed.");
+    }
   };
 
   const stopTraining = () => {
@@ -129,21 +148,31 @@ export default function ModelTrainingPage() {
             Select your target algorithms and initiate the automated hyperparameter tuning and model training pipeline.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {trainingState === "running" ? (
-            <Button onClick={stopTraining} variant="destructive" className="shadow-[0_0_15px_rgba(239,68,68,0.4)]">
-              <StopCircle className="w-4 h-4 mr-2" /> Stop Training
-            </Button>
-          ) : trainingState === "completed" ? (
-            <Button onClick={() => router.push("/studio/evaluation")} className="bg-success text-black hover:bg-success/90 shadow-[0_0_15px_rgba(34,197,94,0.4)]">
-              Continue to Evaluation <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          ) : (
-            <Button onClick={startTraining} className="shadow-[0_0_15px_rgba(56,189,248,0.4)]">
-              Start Training <Play className="w-4 h-4 ml-2" />
-            </Button>
-          )}
-        </div>
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <select 
+              value={targetColumn} 
+              onChange={e => setTargetColumn(e.target.value)}
+              disabled={trainingState !== "idle"}
+              className="bg-black/50 border border-white/10 rounded-md text-sm p-2 text-white outline-none focus:ring-1 focus:ring-primary h-10 w-48"
+            >
+              <option value="" disabled>Select Target Column</option>
+              {columns.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+
+            {trainingState === "running" ? (
+              <Button onClick={stopTraining} variant="destructive" className="shadow-[0_0_15px_rgba(239,68,68,0.4)]">
+                <StopCircle className="w-4 h-4 mr-2" /> Stop Training
+              </Button>
+            ) : trainingState === "completed" ? (
+              <Button onClick={() => router.push("/studio/evaluation")} className="bg-success text-black hover:bg-success/90 shadow-[0_0_15px_rgba(34,197,94,0.4)]">
+                Continue to Evaluation <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            ) : (
+              <Button onClick={startTraining} className="shadow-[0_0_15px_rgba(56,189,248,0.4)]">
+                Start Training <Play className="w-4 h-4 ml-2" />
+              </Button>
+            )}
+          </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

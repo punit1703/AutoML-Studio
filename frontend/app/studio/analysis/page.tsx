@@ -4,6 +4,10 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import api from "@/lib/api";
+import { useAppContext } from "@/context/AppContext";
+import { Loader2 } from "lucide-react";
 import { 
   Database, 
   TableProperties, 
@@ -79,7 +83,50 @@ const targetSuggestionsData = [
 ];
 
 export default function DatasetAnalysisPage() {
+  const router = useRouter();
+  const { datasetId } = useAppContext();
   const [activeTab, setActiveTab] = useState<"overview" | "statistics" | "suggestions">("overview");
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  React.useEffect(() => {
+    if (datasetId) {
+      api.get(`v1/datasets/${datasetId}/analyze/`)
+        .then(res => {
+          setAnalysis(res.data);
+          setIsLoading(false);
+        })
+        .catch(err => {
+          console.error(err);
+          setIsLoading(false);
+        });
+    } else {
+      setIsLoading(false);
+    }
+  }, [datasetId]);
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-[50vh]"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  }
+
+  if (!analysis) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
+        <FileWarning className="w-12 h-12 text-muted-foreground" />
+        <h2 className="text-xl font-bold text-white">No Dataset Found</h2>
+        <p className="text-muted-foreground text-sm">Please upload a dataset first.</p>
+        <Button onClick={() => router.push("/studio/upload")}>Go to Upload</Button>
+      </div>
+    );
+  }
+
+  const dynamicSummaryMetrics = [
+    { title: "Rows", value: analysis.shape.rows.toLocaleString(), icon: Database, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { title: "Columns", value: analysis.shape.columns.toLocaleString(), icon: TableProperties, color: "text-purple-500", bg: "bg-purple-500/10" },
+    { title: "Missing Values", value: Object.values(analysis.missing_values as Record<string, number>).reduce((a: any, b: any) => a + b, 0).toLocaleString(), icon: FileWarning, color: "text-amber-500", bg: "bg-amber-500/10" },
+    { title: "Duplicates", value: analysis.duplicates.toLocaleString(), icon: Copy, color: "text-rose-500", bg: "bg-rose-500/10" },
+    { title: "Problem Type", value: analysis.problem_type || "Auto-detect", icon: Target, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  ];
 
   const renderOverview = () => (
     <div className="space-y-6">
@@ -135,23 +182,31 @@ export default function DatasetAnalysisPage() {
             <CardDescription>Features with null or missing entries</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={missingValuesData} layout="vertical" margin={{ top: 0, right: 10, left: 10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" horizontal={false} />
-                  <XAxis type="number" stroke="#ffffff50" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis dataKey="name" type="category" stroke="#ffffff50" fontSize={12} tickLine={false} axisLine={false} width={80} />
-                  <Tooltip 
-                    cursor={{ fill: '#ffffff05' }}
-                    contentStyle={{ backgroundColor: '#09090b', borderColor: '#ffffff20', borderRadius: '8px' }}
-                  />
-                  <Bar dataKey="missing" radius={[0, 4, 4, 0]}>
-                    {missingValuesData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.missing > 0 ? '#f59e0b' : '#3f3f46'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="h-[300px] w-full overflow-y-auto">
+              <table className="w-full text-sm">
+                <tbody className="divide-y divide-white/5 text-muted-foreground">
+                  {Object.entries(analysis.missing_values).slice(0, 5).map(([name, missing]: any, i) => (
+                    <tr key={i} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-6 py-4">{name}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className={missing > 0 ? "text-amber-500" : "text-success"}>
+                            {missing.toLocaleString()}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="w-full bg-black/50 rounded-full h-1.5 overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full ${missing > 0 ? 'bg-amber-500' : 'bg-success'}`} 
+                            style={{ width: `${Math.min(100, (missing / analysis.shape.rows) * 100)}%` }}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
@@ -218,21 +273,19 @@ export default function DatasetAnalysisPage() {
             <tr>
               <th className="px-6 py-4 font-medium">Column Name</th>
               <th className="px-6 py-4 font-medium">Mean</th>
-              <th className="px-6 py-4 font-medium">Median</th>
               <th className="px-6 py-4 font-medium">Min</th>
               <th className="px-6 py-4 font-medium">Max</th>
               <th className="px-6 py-4 font-medium">Std Dev</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
-            {statisticsData.map((row, i) => (
-              <tr key={i} className="hover:bg-white/5 transition-colors">
-                <td className="px-6 py-4 font-medium text-white">{row.column}</td>
-                <td className="px-6 py-4 text-muted-foreground">{row.mean}</td>
-                <td className="px-6 py-4 text-muted-foreground">{row.median}</td>
-                <td className="px-6 py-4 text-muted-foreground">{row.min}</td>
-                <td className="px-6 py-4 text-muted-foreground">{row.max}</td>
-                <td className="px-6 py-4 text-muted-foreground">{row.stdDev}</td>
+          <tbody className="divide-y divide-white/5 text-muted-foreground font-mono">
+            {Object.keys(analysis.statistics).map((col, i) => (
+              <tr key={i} className="hover:bg-white/[0.02] transition-colors">
+                <td className="px-6 py-4 text-white">{col}</td>
+                <td className="px-6 py-4">{Number(analysis.statistics[col].mean)?.toFixed(2) || '-'}</td>
+                <td className="px-6 py-4">{Number(analysis.statistics[col].min)?.toFixed(2) || '-'}</td>
+                <td className="px-6 py-4">{Number(analysis.statistics[col].max)?.toFixed(2) || '-'}</td>
+                <td className="px-6 py-4">{Number(analysis.statistics[col].std)?.toFixed(2) || '-'}</td>
               </tr>
             ))}
           </tbody>
@@ -349,25 +402,25 @@ export default function DatasetAnalysisPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="border-white/10 text-white hover:bg-white/10">
+          <Button variant="outline" className="border-white/10 text-white hover:bg-white/10" onClick={() => router.push("/studio/downloads")}>
             Export Report
           </Button>
-          <Button className="shadow-[0_0_15px_rgba(56,189,248,0.4)]">
+          <Button className="shadow-[0_0_15px_rgba(56,189,248,0.4)]" onClick={() => router.push("/studio/cleaning")}>
             Continue to Cleaning
           </Button>
         </div>
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {summaryMetrics.map((metric, idx) => {
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {dynamicSummaryMetrics.map((metric, i) => {
           const Icon = metric.icon;
           return (
             <motion.div
-              key={idx}
+              key={i}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
+              transition={{ delay: i * 0.1 }}
             >
               <Card className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors cursor-default h-full">
                 <CardContent className="p-5 flex flex-col items-center justify-center text-center gap-3">

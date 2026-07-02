@@ -18,6 +18,8 @@ import {
   ArrowRight
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import api from "@/lib/api";
+import { useAppContext } from "@/context/AppContext";
 
 // Custom Toggle Switch Component
 const Switch = ({ checked, onChange }: { checked: boolean; onChange: (checked: boolean) => void }) => (
@@ -40,6 +42,7 @@ const Switch = ({ checked, onChange }: { checked: boolean; onChange: (checked: b
 
 export default function DataPreprocessingPage() {
   const router = useRouter();
+  const { datasetId } = useAppContext();
   
   // Preprocessing State
   const [steps, setSteps] = useState({
@@ -68,45 +71,49 @@ export default function DataPreprocessingPage() {
     }));
   };
 
-  const startProcessing = () => {
+  const startProcessing = async () => {
+    if (!datasetId) {
+      alert("No dataset selected");
+      return;
+    }
+
     setIsProcessing(true);
     setProcessStatus("running");
     setProgress(0);
+    setCurrentAction("Initializing preprocessing engine...");
     
-    const enabledSteps = Object.entries(steps).filter(([_, config]) => config.enabled);
-    let currentStep = 0;
-    
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        const next = prev + 5;
-        
-        // Update status text based on progress
-        if (enabledSteps.length > 0) {
-          const stepIndex = Math.floor((next / 100) * enabledSteps.length);
-          if (stepIndex < enabledSteps.length) {
-            const stepName = enabledSteps[stepIndex][0];
-            const displayNames: Record<string, string> = {
-              missingValues: "Imputing Missing Values...",
-              encoding: "Encoding Categorical Features...",
-              scaling: "Scaling Numerical Features...",
-              outliers: "Handling Outliers..."
-            };
-            setCurrentAction(displayNames[stepName]);
-          } else {
-            setCurrentAction("Finalizing pipeline...");
-          }
-        }
-        
-        if (next >= 100) {
-          clearInterval(interval);
-          setProcessStatus("completed");
-          setCurrentAction("Preprocessing Complete!");
-          setTimeout(() => setIsProcessing(false), 2000);
-          return 100;
-        }
-        return next;
-      });
-    }, 150);
+    try {
+      const config = {
+        missing_values: steps.missingValues.enabled ? steps.missingValues.strategy : 'none',
+        encoding: steps.encoding.enabled ? steps.encoding.strategy : 'none',
+        scaling: steps.scaling.enabled ? steps.scaling.strategy : 'none',
+        outliers: steps.outliers.enabled ? steps.outliers.strategy : 'none'
+      };
+      
+      // Simulate progress bar while waiting for the real backend API to finish
+      let p = 0;
+      const interval = setInterval(() => {
+        p += 5;
+        if (p < 90) setProgress(p);
+      }, 300);
+
+      await api.post(`v1/datasets/${datasetId}/preprocess/`, { config });
+      
+      clearInterval(interval);
+      setProgress(100);
+      setCurrentAction("Pipeline executed successfully!");
+      setProcessStatus("completed");
+      
+      setTimeout(() => {
+        setIsProcessing(false);
+      }, 2000);
+      
+    } catch (err) {
+      console.error(err);
+      setIsProcessing(false);
+      setProcessStatus("idle");
+      alert("Failed to preprocess data. Please check logs.");
+    }
   };
 
   return (
