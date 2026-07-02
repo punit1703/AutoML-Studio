@@ -71,6 +71,13 @@ class ModelTrainingEngine:
             self.label_encoder = le
             
         X_train, X_test, y_train, y_test = train_test_split(X, y_valid, test_size=0.2, random_state=42)
+        
+        # Aggressive downsampling for rapid AutoML prototyping
+        MAX_TRAIN_SIZE = 5000
+        if len(X_train) > MAX_TRAIN_SIZE:
+            X_train = X_train.sample(n=MAX_TRAIN_SIZE, random_state=42)
+            y_train = y_train.loc[X_train.index]
+            
         return X_train, X_test, y_train, y_test
         
     def _get_regression_models(self, data_size):
@@ -118,10 +125,10 @@ class ModelTrainingEngine:
         
         if problem_type == 'regression':
             models = self._get_regression_models(data_size)
-            cv_splitter = KFold(n_splits=5, shuffle=True, random_state=42)
+            cv_splitter = KFold(n_splits=3, shuffle=True, random_state=42)
         else:
             models = self._get_classification_models(data_size)
-            cv_splitter = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+            cv_splitter = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
             
         results = []
         
@@ -130,7 +137,7 @@ class ModelTrainingEngine:
             try:
                 if param_grid:
                     search = RandomizedSearchCV(base_model, param_distributions=param_grid, 
-                                                n_iter=5, cv=cv_splitter, n_jobs=None, random_state=42)
+                                                n_iter=2, cv=cv_splitter, n_jobs=None, random_state=42)
                     search.fit(X_train, y_train)
                     model = search.best_estimator_
                     cv_score = search.best_score_
