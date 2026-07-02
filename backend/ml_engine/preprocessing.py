@@ -2,13 +2,15 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.feature_selection import SelectKBest, f_classif, f_regression
+from sklearn.impute import KNNImputer
+from imblearn.over_sampling import SMOTE
 from scipy import stats
 
 class DataPreprocessingEngine:
     def __init__(self, df: pd.DataFrame):
         self.df = df.copy()
 
-    def handle_missing_values(self, strategy='mean', fill_value=None, columns=None):
+    def handle_missing_values(self, strategy='mean', fill_value=None, columns=None, n_neighbors=5):
         if columns is None:
             columns = self.df.columns
             
@@ -29,6 +31,11 @@ class DataPreprocessingEngine:
         elif strategy == 'constant':
             for col in columns:
                 self.df[col] = self.df[col].fillna(fill_value)
+        elif strategy == 'knn':
+            numeric_cols = self.df.select_dtypes(include=[np.number]).columns
+            if len(numeric_cols) > 0:
+                imputer = KNNImputer(n_neighbors=n_neighbors)
+                self.df[numeric_cols] = imputer.fit_transform(self.df[numeric_cols])
             
         return self
 
@@ -119,6 +126,32 @@ class DataPreprocessingEngine:
                 
         return self
 
+    def apply_smote(self, target_column):
+        if target_column not in self.df.columns:
+            return self
+            
+        self.df = self.df.dropna(subset=[target_column])
+        
+        class_counts = self.df[target_column].value_counts(normalize=True)
+        if class_counts.empty or class_counts.min() > 0.2:
+            return self 
+            
+        X = self.df.drop(columns=[target_column])
+        y = self.df[target_column]
+        
+        # SMOTE requires numeric and no missing
+        if X.isnull().values.any() or not all(pd.api.types.is_numeric_dtype(X[col]) for col in X.columns):
+            return self
+            
+        try:
+            smote = SMOTE(random_state=42)
+            X_res, y_res = smote.fit_resample(X, y)
+            self.df = pd.concat([X_res, y_res], axis=1)
+        except Exception:
+            pass # Fails gracefully if SMOTE fails (e.g. n_neighbors > n_samples)
+            
+        return self
+
     def select_features(self, target_column, k=10, problem_type='classification'):
         if target_column not in self.df.columns:
             raise ValueError(f"Target column {target_column} not found.")
@@ -181,6 +214,11 @@ class DataPreprocessingEngine:
             
         if 'feature_selection' in config:
             self.select_features(**config['feature_selection'])
+            
+        if 'smote' in config and config['smote']:
+            target_column = config.get('target_column')
+            if target_column:
+                self.apply_smote(target_column)
             
         return self.df
 
