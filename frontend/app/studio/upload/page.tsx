@@ -72,9 +72,6 @@ export default function DatasetUploadPage() {
       formData.append('project_id', currentProjectId!);
       
       const uploadRes = await api.post('v1/datasets/', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 100));
           setUploadProgress(30 + (percentCompleted * 0.6));

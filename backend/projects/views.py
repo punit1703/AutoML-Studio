@@ -21,11 +21,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
         return Project.objects.filter(user=self.request.user).select_related('user')
 
     def perform_create(self, serializer):
-        ProjectService.create_project(
+        project = ProjectService.create_project(
             user=self.request.user,
             title=serializer.validated_data.get('title'),
             description=serializer.validated_data.get('description', '')
         )
+        serializer.instance = project
 
     def perform_update(self, serializer):
         ProjectService.update_project(
