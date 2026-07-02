@@ -82,40 +82,18 @@ class ModelTrainingEngine:
         
     def _get_regression_models(self, data_size):
         models = {}
-        if data_size > 100000:
-            models['Linear Regression'] = (LinearRegression(), {})
-            models['Ridge'] = (Ridge(), {'alpha': [0.1, 1.0, 10.0]})
-            if LGB_AVAILABLE:
-                models['LightGBM'] = (lgb.LGBMRegressor(random_state=42), {'n_estimators': [50, 100], 'learning_rate': [0.01, 0.1]})
-            if XGB_AVAILABLE:
-                models['XGBoost'] = (xgb.XGBRegressor(random_state=42), {'n_estimators': [50, 100], 'max_depth': [3, 5]})
-        else:
-            models['Linear Regression'] = (LinearRegression(), {})
-            models['Random Forest'] = (RandomForestRegressor(random_state=42), {'n_estimators': [50, 100], 'max_depth': [None, 10, 20]})
-            models['Gradient Boosting'] = (GradientBoostingRegressor(random_state=42), {'n_estimators': [50, 100], 'learning_rate': [0.01, 0.1]})
-            if XGB_AVAILABLE:
-                models['XGBoost'] = (xgb.XGBRegressor(random_state=42), {'n_estimators': [50, 100], 'max_depth': [3, 5, 7]})
-            if LGB_AVAILABLE:
-                models['LightGBM'] = (lgb.LGBMRegressor(random_state=42), {'n_estimators': [50, 100], 'learning_rate': [0.01, 0.1]})
+        models['Linear Regression'] = (LinearRegression(), {})
+        models['Random Forest'] = (RandomForestRegressor(n_estimators=10, random_state=42), {})
+        if LGB_AVAILABLE:
+            models['LightGBM'] = (lgb.LGBMRegressor(n_estimators=10, random_state=42), {})
         return models
         
     def _get_classification_models(self, data_size):
         models = {}
-        if data_size > 100000:
-            models['Logistic Regression'] = (LogisticRegression(max_iter=1000, random_state=42), {'C': [0.1, 1.0, 10.0]})
-            if LGB_AVAILABLE:
-                models['LightGBM'] = (lgb.LGBMClassifier(random_state=42), {'n_estimators': [50, 100], 'learning_rate': [0.01, 0.1]})
-            if XGB_AVAILABLE:
-                models['XGBoost'] = (xgb.XGBClassifier(eval_metric='logloss', random_state=42), {'n_estimators': [50, 100], 'max_depth': [3, 5]})
-        else:
-            models['Logistic Regression'] = (LogisticRegression(max_iter=1000, random_state=42), {'C': [0.1, 1.0, 10.0]})
-            models['Random Forest'] = (RandomForestClassifier(random_state=42), {'n_estimators': [50, 100], 'max_depth': [None, 10, 20]})
-            models['SVM'] = (SVC(probability=True, random_state=42), {'C': [0.1, 1.0], 'kernel': ['rbf', 'linear']})
-            models['KNN'] = (KNeighborsClassifier(), {'n_neighbors': [3, 5, 7]})
-            if XGB_AVAILABLE:
-                models['XGBoost'] = (xgb.XGBClassifier(eval_metric='logloss', random_state=42), {'n_estimators': [50, 100], 'max_depth': [3, 5, 7]})
-            if LGB_AVAILABLE:
-                models['LightGBM'] = (lgb.LGBMClassifier(random_state=42), {'n_estimators': [50, 100], 'learning_rate': [0.01, 0.1]})
+        models['Logistic Regression'] = (LogisticRegression(max_iter=100, random_state=42), {})
+        models['Random Forest'] = (RandomForestClassifier(n_estimators=10, random_state=42), {})
+        if LGB_AVAILABLE:
+            models['LightGBM'] = (lgb.LGBMClassifier(n_estimators=10, random_state=42), {})
         return models
         
     def train_and_evaluate(self):
