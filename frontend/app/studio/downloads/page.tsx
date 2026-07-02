@@ -108,6 +108,17 @@ export default function DownloadsPage() {
     }
   }, [datasetId]);
 
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleDownload = async (item: DownloadItem) => {
     if (!datasetId) {
       alert("No dataset selected");
@@ -119,13 +130,16 @@ export default function DownloadsPage() {
     try {
       if (item.id === "notebook") {
         await api.post(`v1/datasets/${datasetId}/generate_notebook/`, { target_column: targetColumn || "target" });
-        window.open(`http://localhost:8000/api/v1/datasets/${datasetId}/download_notebook/`, "_blank");
+        const response = await api.get(`v1/datasets/${datasetId}/download_notebook/`, { responseType: 'blob' });
+        downloadBlob(response.data, 'reproducible_pipeline.ipynb');
       } else if (item.id === "pdf") {
         await api.post(`v1/datasets/${datasetId}/generate_report/`, { target_column: targetColumn || "target" });
-        window.open(`http://localhost:8000/api/v1/datasets/${datasetId}/download_report/`, "_blank");
+        const response = await api.get(`v1/datasets/${datasetId}/download_report/`, { responseType: 'blob' });
+        downloadBlob(response.data, 'automl_evaluation_report.pdf');
       } else if (item.id === "model") {
         const modelName = bestModel || "Unknown";
-        window.open(`http://localhost:8000/api/v1/datasets/${datasetId}/download_model/?model_name=${modelName}`, "_blank");
+        const response = await api.get(`v1/datasets/${datasetId}/download_model/?model_name=${modelName}`, { responseType: 'blob' });
+        downloadBlob(response.data, `${modelName.replace(' ', '_').toLowerCase()}.joblib`);
       }
       
       const toastId = Math.random().toString(36).substring(7);
