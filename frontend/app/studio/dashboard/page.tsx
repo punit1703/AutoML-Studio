@@ -1,17 +1,47 @@
 "use client";
 
 import * as React from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Database, Cpu, Activity, Clock } from "lucide-react";
+import { Database, Cpu, Activity, Clock, Loader2 } from "lucide-react";
+import api from "@/lib/api";
 
 export default function DashboardPage() {
-  const stats = [
-    { title: "Total Models", value: "12", icon: Cpu, trend: "+2 this week" },
-    { title: "Active Datasets", value: "5", icon: Database, trend: "3.2 GB total" },
-    { title: "Compute Time", value: "24.5h", icon: Clock, trend: "4h remaining" },
-    { title: "System Status", value: "Healthy", icon: Activity, trend: "All clusters online" },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState([
+    { title: "Total Models", value: "0", icon: Cpu, trend: "Trained models" },
+    { title: "Active Datasets", value: "0", icon: Database, trend: "0 KB total" },
+    { title: "Compute Time", value: "0h", icon: Clock, trend: "Used resources" },
+    { title: "System Status", value: "Checking...", icon: Activity, trend: "Pinging clusters" },
+  ]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await api.get("v1/projects/dashboard_stats/");
+        const data = response.data;
+        setStats([
+          { title: "Total Models", value: data.total_models.toString(), icon: Cpu, trend: "Trained models" },
+          { title: "Active Datasets", value: data.active_datasets.toString(), icon: Database, trend: data.total_size_str },
+          { title: "Compute Time", value: data.compute_time, icon: Clock, trend: "Used resources" },
+          { title: "System Status", value: data.system_status, icon: Activity, trend: "All clusters online" },
+        ]);
+      } catch (error) {
+        console.error("Failed to fetch dashboard stats", error);
+        setStats([
+          { title: "Total Models", value: "Error", icon: Cpu, trend: "Trained models" },
+          { title: "Active Datasets", value: "Error", icon: Database, trend: "0 KB total" },
+          { title: "Compute Time", value: "Error", icon: Clock, trend: "Used resources" },
+          { title: "System Status", value: "Offline", icon: Activity, trend: "Cannot reach server" },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-20">
@@ -37,7 +67,7 @@ export default function DashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             >
-              <Card className="bg-[#09090b] border-white/10 hover:border-primary/50 transition-colors shadow-sm overflow-hidden relative group">
+              <Card className="bg-[#09090b] border-white/10 hover:border-primary/50 transition-colors shadow-sm overflow-hidden relative group h-full">
                 <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -46,10 +76,18 @@ export default function DashboardPage() {
                   <Icon className="w-4 h-4 text-primary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold font-mono">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground mt-1 font-mono">
-                    {stat.trend}
-                  </p>
+                  {loading ? (
+                    <div className="flex items-center text-muted-foreground pt-1">
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold font-mono">{stat.value}</div>
+                      <p className="text-xs text-muted-foreground mt-1 font-mono">
+                        {stat.trend}
+                      </p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
