@@ -79,6 +79,17 @@ export default function DashboardPage() {
             Overview of your current workspace and model performance.
           </p>
         </div>
+        <button
+          onClick={() => {
+            setProjectId(null);
+            setDatasetId(null);
+            router.push("/studio/upload");
+          }}
+          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2 shadow-[0_0_15px_rgba(56,189,248,0.4)]"
+        >
+          <Play className="w-4 h-4 mr-2" />
+          New Project
+        </button>
       </div>
 
       {/* Stats Grid */}
