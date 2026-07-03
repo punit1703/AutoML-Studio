@@ -9,11 +9,25 @@ import api from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function StudioTopNavbar() {
-  const { projectId } = useAppContext();
+  const { projectId, datasetId, setDatasetId } = useAppContext();
   const [isSaved, setIsSaved] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [projectName, setProjectName] = useState("My AutoML Project");
   const [saving, setSaving] = useState(false);
+  const [datasets, setDatasets] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    if (projectId) {
+      api.get(`v1/projects/${projectId}/`).then((res) => {
+        setIsSaved(res.data.is_saved);
+        setProjectName(res.data.title || "My AutoML Project");
+      }).catch(console.error);
+
+      api.get(`v1/datasets/?project_id=${projectId}`).then((res) => {
+        setDatasets(res.data);
+      }).catch(console.error);
+    }
+  }, [projectId]);
 
   const handleSave = async () => {
     if (!projectId) return;
@@ -41,6 +55,24 @@ export function StudioTopNavbar() {
               {isSaved ? projectName : "Draft Project"}
             </span>
           </div>
+
+          {/* Dataset Switcher */}
+          {datasets.length > 0 && (
+            <div className="hidden sm:flex items-center gap-2">
+              <span className="text-muted-foreground text-sm">/</span>
+              <select
+                value={datasetId || ""}
+                onChange={(e) => setDatasetId(e.target.value)}
+                className="bg-transparent border border-white/10 text-xs font-mono text-muted-foreground outline-none cursor-pointer rounded px-2 py-1 hover:text-white hover:border-white/20 transition-colors max-w-[200px]"
+              >
+                {datasets.map(d => (
+                  <option key={d.id} value={d.id} className="bg-[#09090b]">
+                    {d.file_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-4 flex-1 justify-center max-w-md">

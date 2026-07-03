@@ -13,8 +13,11 @@ class DatasetViewSet(viewsets.ModelViewSet):
     serializer_class = DatasetSerializer
     
     def get_queryset(self):
-        # Only return datasets belonging to projects owned by the current user
-        return Dataset.objects.filter(project__user=self.request.user).select_related('project')
+        qs = Dataset.objects.filter(project__user=self.request.user).select_related('project')
+        project_id = self.request.query_params.get('project_id')
+        if project_id:
+            qs = qs.filter(project_id=project_id)
+        return qs
         
     def get_serializer_class(self):
         if self.action == 'create':
