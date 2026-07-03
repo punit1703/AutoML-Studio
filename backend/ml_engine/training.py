@@ -57,9 +57,17 @@ class ModelTrainingEngine:
         X = self.df.drop(columns=[self.target_column])
         y = self.df[self.target_column]
         
+        # Handle missing values
         numeric_cols = X.select_dtypes(include=[np.number]).columns
-        X = X[numeric_cols]
-        X = X.fillna(X.mean()) 
+        categorical_cols = X.select_dtypes(exclude=[np.number]).columns
+        
+        X[numeric_cols] = X[numeric_cols].fillna(X[numeric_cols].mean())
+        for col in categorical_cols:
+            X[col] = X[col].fillna(X[col].mode()[0] if not X[col].mode().empty else 'Unknown')
+            
+        # Encode categorical variables using One-Hot Encoding
+        if len(categorical_cols) > 0:
+            X = pd.get_dummies(X, columns=categorical_cols, drop_first=True)
         
         valid_idx = y.dropna().index
         X = X.loc[valid_idx]
@@ -79,23 +87,96 @@ class ModelTrainingEngine:
             y_train = y_train.loc[X_train.index]
             
         return X_train, X_test, y_train, y_test
-        
+
     def _get_regression_models(self, data_size):
+        from sklearn.pipeline import Pipeline
+        from sklearn.preprocessing import StandardScaler
+        from sklearn.feature_selection import SelectKBest, f_regression
+
+        k_options = [10, 20, 50, 'all']
+
         models = {}
-        models['Linear Regression'] = (LinearRegression(), {})
-        models['Random Forest'] = (RandomForestRegressor(n_estimators=10, random_state=42), {})
+        
+        models['Linear Regression'] = (
+            Pipeline([('scaler', StandardScaler()), ('selector', SelectKBest(score_func=f_regression)), ('model', LinearRegression())]),
+            {'selector__k': k_options}
+        )
+        
+        models['Random Forest'] = (
+            Pipeline([('scaler', StandardScaler()), ('selector', SelectKBest(score_func=f_regression)), ('model', RandomForestRegressor(random_state=42))]),
+            {
+                'selector__k': k_options,
+                'model__n_estimators': [50, 100, 200],
+                'model__max_depth': [None, 10, 20, 30],
+                'model__min_samples_split': [2, 5, 10]
+            }
+        )
+        
+        models['Gradient Boosting'] = (
+            Pipeline([('scaler', StandardScaler()), ('selector', SelectKBest(score_func=f_regression)), ('model', GradientBoostingRegressor(random_state=42))]),
+            {
+                'selector__k': k_options,
+                'model__n_estimators': [50, 100, 200],
+                'model__learning_rate': [0.01, 0.1, 0.2],
+                'model__max_depth': [3, 5, 10]
+            }
+        )
+        
         if LGB_AVAILABLE:
-            models['LightGBM'] = (lgb.LGBMRegressor(n_estimators=10, random_state=42), {})
+            models['LightGBM'] = (
+                Pipeline([('scaler', StandardScaler()), ('selector', SelectKBest(score_func=f_regression)), ('model', lgb.LGBMRegressor(random_state=42, verbose=-1))]),
+                {
+                    'selector__k': k_options,
+                    'model__n_estimators': [50, 100, 200],
+                    'model__learning_rate': [0.01, 0.1, 0.2],
+                    'model__num_leaves': [31, 63, 127]
+                }
+            )
+            
         return models
         
     def _get_classification_models(self, data_size):
-        models = {}
-        models['Logistic Regression'] = (LogisticRegression(max_iter=100, random_state=42), {})
-        models['Random Forest'] = (RandomForestClassifier(n_estimators=10, random_state=42), {})
-        if LGB_AVAILABLE:
-            models['LightGBM'] = (lgb.LGBMClassifier(n_estimators=10, random_state=42), {})
-        return models
+        from sklearn.pipeline import Pipeline
+        from sklearn.preprocessing import StandardScaler
+        from sklearn.feature_selection import SelectKBest, f_classif
+        import warnings
         
+        k_options = [10, 20, 50, 'all']
+
+        models = {}
+        
+        models['Logistic Regression'] = (
+            Pipeline([('scaler', StandardScaler()), ('selector', SelectKBest(score_func=f_classif)), ('model', LogisticRegression(max_iter=500, random_state=42))]),
+            {
+                'selector__k': k_options,
+                'model__C': [0.1, 1.0, 10.0],
+                'model__penalty': ['l2', None]
+            }
+        )
+        
+        models['Random Forest'] = (
+            Pipeline([('scaler', StandardScaler()), ('selector', SelectKBest(score_func=f_classif)), ('model', RandomForestClassifier(random_state=42))]),
+            {
+                'selector__k': k_options,
+                'model__n_estimators': [50, 100, 200],
+                'model__max_depth': [None, 10, 20, 30],
+                'model__min_samples_split': [2, 5, 10]
+            }
+        )
+        
+        if LGB_AVAILABLE:
+            models['LightGBM'] = (
+                Pipeline([('scaler', StandardScaler()), ('selector', SelectKBest(score_func=f_classif)), ('model', lgb.LGBMClassifier(random_state=42, verbose=-1))]),
+                {
+                    'selector__k': k_options,
+                    'model__n_estimators': [50, 100, 200],
+                    'model__learning_rate': [0.01, 0.1, 0.2],
+                    'model__num_leaves': [31, 63, 127]
+                }
+            )
+            
+        return models
+
     def train_and_evaluate(self):
         problem_type = self._detect_problem_type()
         X_train, X_test, y_train, y_test = self._prepare_data(problem_type)
@@ -104,26 +185,53 @@ class ModelTrainingEngine:
         if problem_type == 'regression':
             models = self._get_regression_models(data_size)
             cv_splitter = KFold(n_splits=3, shuffle=True, random_state=42)
+            target_score = 0.85 # Target R2
         else:
             models = self._get_classification_models(data_size)
             cv_splitter = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
+            target_score = 0.85 # Target Accuracy
             
         results = []
+        
+        # Iterative optimization attempts: 
+        # Attempt 1: 5 combos (Fast)
+        # Attempt 2: 15 combos (Moderate)
+        # Attempt 3: 30 combos (Exhaustive)
+        search_budgets = [5, 15, 30] 
         
         for name, (base_model, param_grid) in models.items():
             start_time = time.time()
             try:
-                if param_grid:
-                    search = RandomizedSearchCV(base_model, param_distributions=param_grid, 
-                                                n_iter=2, cv=cv_splitter, n_jobs=None, random_state=42)
-                    search.fit(X_train, y_train)
-                    model = search.best_estimator_
-                    cv_score = search.best_score_
-                else:
-                    model = base_model
-                    model.fit(X_train, y_train)
-                    cv_score = None
-                    
+                best_model = None
+                best_cv_score = -float('inf')
+                
+                # Iterative Try Again loop
+                for budget in search_budgets:
+                    if param_grid:
+                        search = RandomizedSearchCV(base_model, param_distributions=param_grid, 
+                                                    n_iter=budget, cv=cv_splitter, n_jobs=None, random_state=42)
+                        search.fit(X_train, y_train)
+                        current_model = search.best_estimator_
+                        cv_score = search.best_score_
+                    else:
+                        current_model = base_model
+                        current_model.fit(X_train, y_train)
+                        cv_score = None # Only 1 iteration needed if no param grid
+                        
+                    if cv_score is None or cv_score > best_cv_score:
+                        best_model = current_model
+                        best_cv_score = cv_score
+                        
+                    # Stop if we hit our target accuracy
+                    if cv_score is None or cv_score >= target_score:
+                        break
+                        
+                    # Break out early if param grid is small
+                    if not param_grid:
+                        break
+                
+                model = best_model
+                cv_score = best_cv_score if best_cv_score != -float('inf') else None
                 training_time = time.time() - start_time
                 
                 # Test set evaluation
@@ -157,10 +265,11 @@ class ModelTrainingEngine:
                     'model_path': f"/media/{relative_path}"
                 })
             except Exception as e:
+                import traceback
                 results.append({
                     'model_name': name,
                     'status': 'error',
-                    'error': str(e)
+                    'error': str(e) + "\\n" + traceback.format_exc()
                 })
             
         return {
