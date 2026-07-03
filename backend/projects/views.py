@@ -18,7 +18,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_queryset(self):
-        return Project.objects.filter(user=self.request.user).select_related('user')
+        return Project.objects.filter(user=self.request.user, is_saved=True).select_related('user')
 
     def perform_create(self, serializer):
         project = ProjectService.create_project(
@@ -53,7 +53,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         
         user = request.user
         
-        datasets = Dataset.objects.filter(project__user=user)
+        datasets = Dataset.objects.filter(project__user=user, project__is_saved=True)
         active_datasets_count = datasets.count()
         total_size = datasets.aggregate(Sum('file_size'))['file_size__sum'] or 0
         
@@ -81,4 +81,13 @@ class ProjectViewSet(viewsets.ModelViewSet):
             "compute_time": compute_time,
             "system_status": "Healthy"
         })
+
+    @action(detail=True, methods=['post'])
+    def save_project(self, request, pk=None):
+        project = Project.objects.filter(pk=pk, user=request.user).first()
+        if not project:
+            return Response({"error": "Project not found."}, status=status.HTTP_404_NOT_FOUND)
+        project.is_saved = True
+        project.save(update_fields=['is_saved'])
+        return Response({"status": "saved"}, status=status.HTTP_200_OK)
 

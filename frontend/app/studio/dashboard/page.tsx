@@ -4,11 +4,16 @@ import * as React from "react";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Database, Cpu, Activity, Clock, Loader2 } from "lucide-react";
+import { Database, Cpu, Activity, Clock, Loader2, Play, FolderOpen } from "lucide-react";
 import api from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { useAppContext } from "@/context/AppContext";
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const { setProjectId, setDatasetId } = useAppContext();
   const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState<any[]>([]);
   const [stats, setStats] = useState([
     { title: "Total Models", value: "0", icon: Cpu, trend: "Trained models" },
     { title: "Active Datasets", value: "0", icon: Database, trend: "0 KB total" },
@@ -39,9 +44,29 @@ export default function DashboardPage() {
         setLoading(false);
       }
     };
+    
+    const fetchProjects = async () => {
+      try {
+        const response = await api.get("v1/projects/");
+        setProjects(response.data);
+      } catch (error) {
+        console.error("Failed to fetch projects", error);
+      }
+    };
 
     fetchStats();
+    fetchProjects();
   }, []);
+
+  const resumeProject = (project: any) => {
+    setProjectId(project.id);
+    if (project.primary_dataset_id) {
+      setDatasetId(project.primary_dataset_id);
+      router.push("/studio/analysis");
+    } else {
+      router.push("/studio/upload");
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-20">
@@ -95,7 +120,7 @@ export default function DashboardPage() {
         })}
       </div>
 
-      {/* Recent Activity Placeholder */}
+      {/* Saved Projects Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -103,14 +128,42 @@ export default function DashboardPage() {
       >
         <Card className="bg-[#09090b] border-white/10 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg">Recent Training Runs</CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <FolderOpen className="w-5 h-5 text-primary" />
+              Saved Projects
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64 flex flex-col items-center justify-center text-muted-foreground border border-dashed border-white/10 rounded-lg bg-[#000000]">
-              <Database className="w-8 h-8 mb-3 opacity-20" />
-              <p className="text-sm">No recent activity detected.</p>
-              <p className="text-xs mt-1">Upload a dataset to start training.</p>
-            </div>
+            {projects.length === 0 ? (
+              <div className="h-64 flex flex-col items-center justify-center text-muted-foreground border border-dashed border-white/10 rounded-lg bg-[#000000]">
+                <Database className="w-8 h-8 mb-3 opacity-20" />
+                <p className="text-sm">No saved projects found.</p>
+                <p className="text-xs mt-1">Complete a training pipeline and save it to see it here.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {projects.map((project: any) => (
+                  <div 
+                    key={project.id}
+                    className="p-4 rounded-xl border border-white/10 bg-[#000000] hover:border-primary/50 transition-all cursor-pointer group flex flex-col"
+                    onClick={() => resumeProject(project)}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-semibold text-white truncate pr-2">{project.title}</h3>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap bg-white/5 px-2 py-1 rounded">
+                        {new Date(project.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-4 flex-1">
+                      {project.description || "No description provided."}
+                    </p>
+                    <div className="flex items-center text-xs text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                      Resume Workspace <Play className="w-3 h-3 ml-1" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </motion.div>

@@ -11,8 +11,11 @@ import {
   Loader2,
   CheckCircle2,
   Terminal,
-  HardDriveDownload
+  HardDriveDownload,
+  Save,
+  Home
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAppContext } from "@/context/AppContext";
 
@@ -76,12 +79,15 @@ const itemVariants = {
 };
 
 export default function DownloadsPage() {
-  const { datasetId } = useAppContext();
+  const router = useRouter();
+  const { datasetId, projectId } = useAppContext();
   const [downloading, setDownloading] = useState<Record<string, boolean>>({});
   const [toasts, setToasts] = useState<{ id: string; title: string; description: string }[]>([]);
   
   const [targetColumn, setTargetColumn] = useState("");
   const [bestModel, setBestModel] = useState("");
+  const [savingProject, setSavingProject] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     if (datasetId) {
@@ -165,6 +171,34 @@ export default function DownloadsPage() {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
+  const handleSaveProject = async () => {
+    if (!projectId) {
+      alert("No project selected");
+      return;
+    }
+    
+    setSavingProject(true);
+    try {
+      await api.post(`v1/projects/${projectId}/save_project/`);
+      setIsSaved(true);
+      
+      const toastId = Math.random().toString(36).substring(7);
+      setToasts(prev => [...prev, {
+        id: toastId,
+        title: "Project Saved!",
+        description: `Your project is now visible on the dashboard.`
+      }]);
+      setTimeout(() => {
+        setToasts(prev => prev.filter(t => t.id !== toastId));
+      }, 3000);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save project.");
+    } finally {
+      setSavingProject(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8 pb-20 relative min-h-[80vh]">
       {/* Header Section */}
@@ -183,6 +217,30 @@ export default function DownloadsPage() {
           <p className="text-muted-foreground mt-2 max-w-2xl">
             Export your trained models, code, and analytical reports to integrate with your external production environments.
           </p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <Button 
+            onClick={() => router.push("/studio/dashboard")}
+            variant="outline" 
+            className="border-white/10 hover:bg-white/5"
+          >
+            <Home className="w-4 h-4 mr-2" /> Dashboard
+          </Button>
+          
+          <Button 
+            onClick={handleSaveProject}
+            disabled={savingProject || isSaved || !projectId}
+            className={`${isSaved ? 'bg-success text-black hover:bg-success/90' : 'shadow-[0_0_15px_rgba(56,189,248,0.4)]'}`}
+          >
+            {savingProject ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
+            ) : isSaved ? (
+              <><CheckCircle2 className="w-4 h-4 mr-2" /> Saved to Dashboard</>
+            ) : (
+              <><Save className="w-4 h-4 mr-2" /> Save Project</>
+            )}
+          </Button>
         </div>
       </motion.div>
 

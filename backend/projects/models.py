@@ -10,6 +10,7 @@ class Project(BaseModel):
         on_delete=models.CASCADE,
         related_name="projects"
     )
+    is_saved = models.BooleanField(default=False)
 
     def __str__(self):
         return self.title
