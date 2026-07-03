@@ -1,46 +1,150 @@
 "use client";
 
 import * as React from "react";
-import { Search, User, Moon, Code2 } from "lucide-react";
+import { useState } from "react";
+import { Search, User, Moon, Code2, Save, X, Loader2, CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useAppContext } from "@/context/AppContext";
+import api from "@/lib/api";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function StudioTopNavbar() {
-  return (
-    <header className="h-14 bg-[#09090b] border-b border-white/10 flex items-center justify-between px-4 shrink-0">
-      <div className="flex items-center gap-4 flex-1">
-        {/* Project Name (Editable style) */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-white/5 cursor-pointer transition-colors group">
-          <Code2 className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-          <span className="text-sm font-semibold text-foreground">fraud-detection-model</span>
-        </div>
-      </div>
+  const { projectId } = useAppContext();
+  const [isSaved, setIsSaved] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [projectName, setProjectName] = useState("My AutoML Project");
+  const [saving, setSaving] = useState(false);
 
-      <div className="flex items-center gap-4 flex-1 justify-center max-w-md">
-        {/* Command Palette / Search Style */}
-        <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search datasets, models, or settings..." 
-            className="w-full h-9 pl-9 pr-4 bg-[#18181b] border-white/10 font-mono text-xs text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/20 rounded-md shadow-inner"
-          />
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
-            <kbd className="px-1.5 py-0.5 rounded border border-white/10 bg-[#09090b] text-[10px] font-mono text-muted-foreground">⌘</kbd>
-            <kbd className="px-1.5 py-0.5 rounded border border-white/10 bg-[#09090b] text-[10px] font-mono text-muted-foreground">K</kbd>
+  const handleSave = async () => {
+    if (!projectId) return;
+    setSaving(true);
+    try {
+      await api.post(`v1/projects/${projectId}/save_project/`, { title: projectName });
+      setIsSaved(true);
+      setShowModal(false);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save project.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <header className="h-14 bg-[#09090b] border-b border-white/10 flex items-center justify-between px-4 shrink-0">
+        <div className="flex items-center gap-4 flex-1">
+          {/* Project Name (Editable style) */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-white/5 cursor-pointer transition-colors group">
+            <Code2 className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            <span className="text-sm font-semibold text-foreground">
+              {isSaved ? projectName : "Draft Project"}
+            </span>
           </div>
         </div>
-      </div>
 
-      <div className="flex items-center gap-3 flex-1 justify-end">
-        {/* Theme Toggle Placeholder */}
-        <button className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/5 text-muted-foreground hover:text-primary transition-colors">
-          <Moon className="w-4 h-4" />
-        </button>
-        
-        {/* Profile Avatar */}
-        <button className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary hover:shadow-[0_0_10px_rgba(56,189,248,0.3)] transition-all">
-          <User className="w-4 h-4" />
-        </button>
-      </div>
-    </header>
+        <div className="flex items-center gap-4 flex-1 justify-center max-w-md">
+          {/* Command Palette / Search Style */}
+          <div className="relative w-full hidden md:block">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input 
+              placeholder="Search datasets, models, or settings..." 
+              className="w-full h-9 pl-9 pr-4 bg-[#18181b] border-white/10 font-mono text-xs text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/20 rounded-md shadow-inner"
+            />
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+              <kbd className="px-1.5 py-0.5 rounded border border-white/10 bg-[#09090b] text-[10px] font-mono text-muted-foreground">⌘</kbd>
+              <kbd className="px-1.5 py-0.5 rounded border border-white/10 bg-[#09090b] text-[10px] font-mono text-muted-foreground">K</kbd>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 flex-1 justify-end">
+          {projectId && (
+            <button 
+              onClick={() => setShowModal(true)}
+              disabled={isSaved}
+              className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                isSaved 
+                  ? "bg-success/10 text-success border border-success/20 cursor-default" 
+                  : "bg-primary text-black hover:bg-primary/90 shadow-[0_0_10px_rgba(56,189,248,0.3)]"
+              }`}
+            >
+              {isSaved ? (
+                <><CheckCircle2 className="w-4 h-4" /> Saved</>
+              ) : (
+                <><Save className="w-4 h-4" /> Save Project</>
+              )}
+            </button>
+          )}
+
+          {/* Theme Toggle Placeholder */}
+          <button className="w-8 h-8 hidden sm:flex items-center justify-center rounded-md hover:bg-white/5 text-muted-foreground hover:text-primary transition-colors">
+            <Moon className="w-4 h-4" />
+          </button>
+          
+          {/* Profile Avatar */}
+          <button className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary hover:shadow-[0_0_10px_rgba(56,189,248,0.3)] transition-all">
+            <User className="w-4 h-4" />
+          </button>
+        </div>
+      </header>
+
+      {/* Save Project Modal */}
+      <AnimatePresence>
+        {showModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#09090b] border border-white/10 rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
+            >
+              <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/[0.02]">
+                <h2 className="text-lg font-semibold text-white">Save Project</h2>
+                <button 
+                  onClick={() => setShowModal(false)}
+                  className="text-muted-foreground hover:text-white transition-colors p-1"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1.5">
+                    Project Name
+                  </label>
+                  <Input 
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    placeholder="E.g., Customer Churn Prediction"
+                    className="bg-[#18181b] border-white/10 text-white placeholder:text-muted-foreground/50 focus-visible:ring-primary/50 h-10"
+                    autoFocus
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Saving this project will make it available on your dashboard for future reference.
+                  </p>
+                </div>
+                <div className="flex gap-3 justify-end pt-4">
+                  <button 
+                    onClick={() => setShowModal(false)}
+                    className="px-4 py-2 rounded-md text-sm font-medium bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleSave}
+                    disabled={saving || !projectName.trim()}
+                    className="px-4 py-2 rounded-md text-sm font-medium bg-primary text-black hover:bg-primary/90 transition-colors shadow-[0_0_15px_rgba(56,189,248,0.4)] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Save Project
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

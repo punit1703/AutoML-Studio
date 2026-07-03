@@ -87,7 +87,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
         project = Project.objects.filter(pk=pk, user=request.user).first()
         if not project:
             return Response({"error": "Project not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        title = request.data.get('title')
+        if title:
+            project.title = title
+            
         project.is_saved = True
-        project.save(update_fields=['is_saved'])
-        return Response({"status": "saved"}, status=status.HTTP_200_OK)
+        project.save(update_fields=['is_saved', 'title'])
+        return Response({"status": "saved", "title": project.title}, status=status.HTTP_200_OK)
 
