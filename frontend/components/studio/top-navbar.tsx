@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export function StudioTopNavbar() {
   const { projectId, datasetId, setDatasetId } = useAppContext();
-  const [isSaved, setIsSaved] = useState(false);
+  const [recentlySaved, setRecentlySaved] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [projectName, setProjectName] = useState("My AutoML Project");
   const [saving, setSaving] = useState(false);
@@ -19,7 +19,6 @@ export function StudioTopNavbar() {
   React.useEffect(() => {
     if (projectId) {
       api.get(`v1/projects/${projectId}/`).then((res) => {
-        setIsSaved(res.data.is_saved);
         setProjectName(res.data.title || "My AutoML Project");
       }).catch(console.error);
 
@@ -34,8 +33,9 @@ export function StudioTopNavbar() {
     setSaving(true);
     try {
       await api.post(`v1/projects/${projectId}/save_project/`, { title: projectName });
-      setIsSaved(true);
       setShowModal(false);
+      setRecentlySaved(true);
+      setTimeout(() => setRecentlySaved(false), 3000);
     } catch (err) {
       console.error(err);
       alert("Failed to save project.");
@@ -52,7 +52,7 @@ export function StudioTopNavbar() {
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-white/5 cursor-pointer transition-colors group">
             <Code2 className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
             <span className="text-sm font-semibold text-foreground">
-              {isSaved ? projectName : "Draft Project"}
+              {projectName}
             </span>
           </div>
 
@@ -92,21 +92,35 @@ export function StudioTopNavbar() {
 
         <div className="flex items-center gap-3 flex-1 justify-end">
           {projectId && (
-            <button 
-              onClick={() => setShowModal(true)}
-              disabled={isSaved}
-              className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
-                isSaved 
-                  ? "bg-success/10 text-success border border-success/20 cursor-default" 
-                  : "bg-primary text-black hover:bg-primary/90 shadow-[0_0_10px_rgba(56,189,248,0.3)]"
-              }`}
-            >
-              {isSaved ? (
-                <><CheckCircle2 className="w-4 h-4" /> Saved</>
-              ) : (
-                <><Save className="w-4 h-4" /> Save Project</>
-              )}
-            </button>
+            <>
+              <button
+                onClick={() => {
+                  setProjectId(null);
+                  setDatasetId(null);
+                  window.location.href = "/studio/upload";
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+              >
+                New Project
+              </button>
+              <button 
+                onClick={() => {
+                  if (!recentlySaved) setShowModal(true);
+                }}
+                disabled={recentlySaved}
+                className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                  recentlySaved 
+                    ? "bg-success/10 text-success border border-success/20 cursor-default" 
+                    : "bg-primary text-black hover:bg-primary/90 shadow-[0_0_10px_rgba(56,189,248,0.3)]"
+                }`}
+              >
+                {recentlySaved ? (
+                  <><CheckCircle2 className="w-4 h-4" /> Saved</>
+                ) : (
+                  <><Save className="w-4 h-4" /> Save Project</>
+                )}
+              </button>
+            </>
           )}
 
           {/* Theme Toggle Placeholder */}

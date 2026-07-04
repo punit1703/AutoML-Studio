@@ -15,8 +15,8 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [token, setTokenState] = useState<string | null>(null);
-  const [projectId, setProjectId] = useState<string | null>(null);
-  const [datasetId, setDatasetId] = useState<string | null>(null);
+  const [projectId, setProjectIdState] = useState<string | null>(null);
+  const [datasetId, setDatasetIdState] = useState<string | null>(null);
 
   useEffect(() => {
     // Load from local storage on mount
@@ -38,16 +38,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Sync to local storage
-  useEffect(() => {
-    if (projectId) localStorage.setItem('project_id', projectId);
+  const setProjectId = (id: string | null) => {
+    setProjectIdState(id);
+    if (id) localStorage.setItem('project_id', id);
     else localStorage.removeItem('project_id');
-  }, [projectId]);
+  };
 
-  useEffect(() => {
-    if (datasetId) localStorage.setItem('dataset_id', datasetId);
+  const setDatasetId = (id: string | null) => {
+    setDatasetIdState(id);
+    if (id) localStorage.setItem('dataset_id', id);
     else localStorage.removeItem('dataset_id');
-  }, [datasetId]);
+  };
 
   return (
     <AppContext.Provider value={{ token, setToken, projectId, setProjectId, datasetId, setDatasetId }}>

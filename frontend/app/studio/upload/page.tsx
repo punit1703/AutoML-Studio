@@ -103,6 +103,8 @@ export default function DatasetUploadPage() {
     setUploadState("idle");
     setUploadProgress(0);
     setFileDetails(null);
+    setProjectId(null);
+    setDatasetId(null);
   };
 
   return (
