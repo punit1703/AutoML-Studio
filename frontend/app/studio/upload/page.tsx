@@ -113,9 +113,29 @@ export default function DatasetUploadPage() {
         <h1 className="text-3xl font-bold tracking-tight text-foreground font-mono">
           $ dataset upload
         </h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Ingest raw data into your workspace for cleaning and model training.
-        </p>
+        {projectId ? (
+          <div className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-white">Adding to Existing Project</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                You are currently adding a dataset to your active workspace. If you meant to start a new project for this data, click here:
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setProjectId(null);
+                setDatasetId(null);
+              }}
+              className="shrink-0 text-xs px-4 py-2 bg-primary text-black rounded hover:bg-primary/90 font-bold shadow-[0_0_10px_rgba(56,189,248,0.3)] transition-all"
+            >
+              Start New Project
+            </button>
+          </div>
+        ) : (
+          <p className="text-muted-foreground mt-1 text-sm">
+            Ingest raw data into your new workspace for cleaning and model training.
+          </p>
+        )}
       </div>
 
       <AnimatePresence mode="wait">

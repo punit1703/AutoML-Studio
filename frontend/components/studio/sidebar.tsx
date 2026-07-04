@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useAppContext } from "@/context/AppContext";
 import { 
   LayoutDashboard, 
   Upload, 
@@ -13,13 +14,14 @@ import {
   Cpu, 
   CheckSquare, 
   Download,
-  Database
+  Database,
+  Plus
 } from "lucide-react";
 import { motion } from "framer-motion";
 
 const sidebarNavItems = [
   { title: "Dashboard", href: "/studio/dashboard", icon: LayoutDashboard },
-  { title: "Upload", href: "/studio/upload", icon: Upload },
+  { title: "Data Upload", href: "/studio/upload", icon: Upload },
   { title: "Analysis", href: "/studio/analysis", icon: BarChart2 },
   { title: "Cleaning", href: "/studio/cleaning", icon: Wand2 },
   { title: "Visualization", href: "/studio/visualization", icon: PieChart },
@@ -30,6 +32,14 @@ const sidebarNavItems = [
 
 export function StudioSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { setProjectId, setDatasetId } = useAppContext();
+
+  const handleNewProject = () => {
+    setProjectId(null);
+    setDatasetId(null);
+    router.push("/studio/upload");
+  };
 
   return (
     <div className="flex h-full w-64 flex-col bg-[#09090b] border-r border-white/10 shrink-0">
@@ -42,7 +52,17 @@ export function StudioSidebar() {
         </Link>
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-hide">
+      <div className="px-3 py-4">
+        <button
+          onClick={handleNewProject}
+          className="w-full flex items-center justify-center gap-2 bg-primary text-black font-semibold rounded-md py-2 hover:bg-primary/90 transition-colors shadow-[0_0_10px_rgba(56,189,248,0.2)]"
+        >
+          <Plus className="w-4 h-4" />
+          New Project
+        </button>
+      </div>
+
+      <nav className="flex-1 overflow-y-auto px-3 space-y-1 scrollbar-hide">
         {sidebarNavItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;

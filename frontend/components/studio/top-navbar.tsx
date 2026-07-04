@@ -9,7 +9,7 @@ import api from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function StudioTopNavbar() {
-  const { projectId, datasetId, setDatasetId } = useAppContext();
+  const { projectId, setProjectId, datasetId, setDatasetId } = useAppContext();
   const [recentlySaved, setRecentlySaved] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [projectName, setProjectName] = useState("My AutoML Project");
