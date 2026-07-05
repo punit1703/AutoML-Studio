@@ -49,16 +49,20 @@ class ProjectViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def dashboard_stats(self, request):
         from datasets.models import Dataset
-        from django.db.models import Sum
+        from django.db.models import Sum, Max
         from django.conf import settings
         import os
         import glob
         
         user = request.user
         
-        datasets = Dataset.objects.filter(project__user=user, project__is_saved=True)
-        active_datasets_count = datasets.count()
-        total_size = datasets.aggregate(Sum('file_size'))['file_size__sum'] or 0
+        # Only consider the latest dataset per saved project as "active"
+        all_saved_datasets = Dataset.objects.filter(project__user=user, project__is_saved=True)
+        latest_dataset_ids = all_saved_datasets.values('project').annotate(latest_id=Max('id')).values_list('latest_id', flat=True)
+        
+        active_datasets = Dataset.objects.filter(id__in=latest_dataset_ids)
+        active_datasets_count = active_datasets.count()
+        total_size = active_datasets.aggregate(Sum('file_size'))['file_size__sum'] or 0
         
         if total_size > 1024 * 1024 * 1024:
             size_str = f"{total_size / (1024 * 1024 * 1024):.1f} GB total"
@@ -68,7 +72,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
             size_str = f"{total_size / 1024:.1f} KB total"
             
         total_models = 0
-        for dataset in datasets:
+        for dataset in active_datasets:
             model_dir = os.path.join(settings.MEDIA_ROOT, 'models', str(dataset.id))
             if os.path.exists(model_dir):
                 models = glob.glob(os.path.join(model_dir, "*.joblib"))
