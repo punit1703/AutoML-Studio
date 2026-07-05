@@ -58,7 +58,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         
         # Only consider the latest dataset per saved project as "active"
         all_saved_datasets = Dataset.objects.filter(project__user=user, project__is_saved=True)
-        latest_dataset_ids = all_saved_datasets.values('project').annotate(latest_id=Max('id')).values_list('latest_id', flat=True)
+        latest_dataset_ids = all_saved_datasets.order_by('project_id', '-created_at').distinct('project_id').values_list('id', flat=True)
         
         active_datasets = Dataset.objects.filter(id__in=latest_dataset_ids)
         active_datasets_count = active_datasets.count()

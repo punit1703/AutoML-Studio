@@ -34,7 +34,13 @@ export function StudioTopNavbar() {
     if (projectId) {
       api.get(`v1/projects/${projectId}/`).then((res) => {
         setProjectName(res.data.title || "My AutoML Project");
-      }).catch(console.error);
+      }).catch((err) => {
+        console.error(err);
+        if (err.response?.status === 404) {
+          setProjectId(null);
+          setDatasetId(null);
+        }
+      });
 
       api.get(`v1/datasets/?project_id=${projectId}`).then((res) => {
         setDatasets(res.data);
