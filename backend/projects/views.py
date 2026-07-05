@@ -18,7 +18,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_queryset(self):
-        return Project.objects.filter(user=self.request.user, is_saved=True).select_related('user')
+        qs = Project.objects.filter(user=self.request.user).select_related('user')
+        if self.action == 'list':
+            qs = qs.filter(is_saved=True)
+        return qs
 
     def perform_create(self, serializer):
         project = ProjectService.create_project(
