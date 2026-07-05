@@ -1,7 +1,6 @@
 import * as React from "react";
 import { StudioSidebar } from "@/components/studio/sidebar";
 import { StudioTopNavbar } from "@/components/studio/top-navbar";
-import { StudioOutputPanel } from "@/components/studio/output-panel";
 
 export default function StudioLayout({
   children,
@@ -27,9 +26,6 @@ export default function StudioLayout({
             {children}
           </div>
         </main>
-
-        {/* Output Panel (Collapsible Bottom Pane) */}
-        <StudioOutputPanel />
       </div>
     </div>
   );
