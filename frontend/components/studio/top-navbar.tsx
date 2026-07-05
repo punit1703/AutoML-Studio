@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useState } from "react";
-import { Search, User, Moon, Code2, Save, X, Loader2, CheckCircle2 } from "lucide-react";
+import { Search, User, Moon, Code2, Save, X, Loader2, CheckCircle2, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAppContext } from "@/context/AppContext";
 import api from "@/lib/api";
@@ -17,6 +17,18 @@ export function StudioTopNavbar() {
   const [projectName, setProjectName] = useState("My AutoML Project");
   const [saving, setSaving] = useState(false);
   const [datasets, setDatasets] = useState<any[]>([]);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  // Close profile menu when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (showProfileMenu) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [showProfileMenu]);
 
   React.useEffect(() => {
     if (projectId) {
@@ -43,6 +55,14 @@ export function StudioTopNavbar() {
       alert("Failed to save project.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      window.location.href = '/login';
     }
   };
 
@@ -127,10 +147,39 @@ export function StudioTopNavbar() {
 
           <ThemeToggle />
           
-          {/* Profile Avatar */}
-          <button className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary hover:shadow-[0_0_10px_rgba(56,189,248,0.3)] transition-all">
-            <User className="w-4 h-4" />
-          </button>
+          {/* Profile Avatar & Dropdown */}
+          <div className="relative">
+            <button 
+              onClick={(e) => { e.stopPropagation(); setShowProfileMenu(!showProfileMenu); }}
+              className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary hover:shadow-[0_0_10px_rgba(56,189,248,0.3)] transition-all"
+            >
+              <User className="w-4 h-4" />
+            </button>
+
+            <AnimatePresence>
+              {showProfileMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-md shadow-lg py-1 z-50 overflow-hidden"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="px-4 py-3 border-b border-border/50">
+                    <p className="text-sm font-medium text-foreground">My Account</p>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-error hover:bg-error/10 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign out
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </header>
 
