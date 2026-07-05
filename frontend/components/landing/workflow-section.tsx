@@ -10,22 +10,22 @@ export function WorkflowSection({ className }: React.HTMLAttributes<HTMLDivEleme
     {
       title: "Upload Dataset",
       description: "Drop your CSV or JSON data. We automatically analyze data types and handle missing values with zero configuration.",
-      icon: <UploadCloud className="w-8 h-8 text-white" />,
+      icon: <UploadCloud className="w-8 h-8 text-foreground" />,
     },
     {
       title: "Configure Target",
       description: "Select the column you want to predict. Choose between classification or regression, or let us auto-detect it.",
-      icon: <Settings2 className="w-8 h-8 text-white" />,
+      icon: <Settings2 className="w-8 h-8 text-foreground" />,
     },
     {
       title: "Train & Compare",
       description: "Watch in real-time as multiple algorithms train and compete on a sleek leaderboard to give you the highest accuracy.",
-      icon: <Activity className="w-8 h-8 text-white" />,
+      icon: <Activity className="w-8 h-8 text-foreground" />,
     },
     {
       title: "Download Model",
       description: "Export the best performing model along with production-ready Python inference code to deploy instantly.",
-      icon: <ArrowDownToLine className="w-8 h-8 text-white" />,
+      icon: <ArrowDownToLine className="w-8 h-8 text-foreground" />,
     },
   ];
 
@@ -82,7 +82,7 @@ export function WorkflowSection({ className }: React.HTMLAttributes<HTMLDivEleme
                 </div>
 
                 {/* Glowing Icon Center */}
-                <div className="relative z-10 w-20 h-20 rounded-full bg-[#09090b] border border-white/10 shadow-[0_0_30px_rgba(56,189,248,0.2)] flex items-center justify-center shrink-0 ring-8 ring-background text-primary">
+                <div className="relative z-10 w-20 h-20 rounded-full bg-card border border-border shadow-[0_0_30px_rgba(56,189,248,0.2)] flex items-center justify-center shrink-0 ring-8 ring-background text-primary">
                   {step.icon}
                 </div>
 

@@ -32,7 +32,7 @@ export function HeroSection({ className }: React.HTMLAttributes<HTMLDivElement>)
               animate: { opacity: 1, y: 0, transition: { staggerChildren: 0.1 } },
             }}
           >
-            <motion.div variants={fadeIn} className="inline-flex items-center gap-2 mb-6 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-primary text-xs font-mono uppercase tracking-wider backdrop-blur-sm shadow-sm">
+            <motion.div variants={fadeIn} className="inline-flex items-center gap-2 mb-6 px-3 py-1 rounded-full border border-border bg-secondary text-primary text-xs font-mono uppercase tracking-wider backdrop-blur-sm shadow-sm">
               <span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_rgba(56,189,248,0.8)] animate-pulse" />
               v2.0 Beta Live
             </motion.div>
@@ -49,7 +49,7 @@ export function HeroSection({ className }: React.HTMLAttributes<HTMLDivElement>)
             </motion.p>
             
             <motion.div variants={fadeIn} className="mt-10 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-              <button className="inline-flex items-center justify-center w-full sm:w-auto text-base px-8 h-14 rounded-md bg-primary hover:bg-primary/90 text-black shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:shadow-[0_0_30px_rgba(56,189,248,0.6)] hover:-translate-y-0.5 transition-all font-mono font-semibold">
+              <button className="inline-flex items-center justify-center w-full sm:w-auto text-base px-8 h-14 rounded-md bg-primary hover:bg-primary/90 text-background shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:shadow-[0_0_30px_rgba(56,189,248,0.6)] hover:-translate-y-0.5 transition-all font-mono font-semibold">
                 <Terminal className="w-4 h-4 mr-2" />
                 Start Training
               </button>
@@ -67,11 +67,11 @@ export function HeroSection({ className }: React.HTMLAttributes<HTMLDivElement>)
             initial={{ opacity: 0, x: 50, rotateY: -10 }}
             animate={{ opacity: 1, x: 0, rotateY: 0 }}
             transition={{ duration: 1, ease: "easeOut" }}
-            className="relative rounded-xl bg-[#09090b] border border-white/10 shadow-2xl shadow-black/80 overflow-hidden"
+            className="relative rounded-xl bg-card border border-border shadow-2xl shadow-black/80 overflow-hidden"
             style={{ perspective: 1000 }}
           >
             {/* Terminal Header */}
-            <div className="flex items-center px-4 py-3 border-b border-white/10 bg-[#18181b]">
+            <div className="flex items-center px-4 py-3 border-b border-border bg-secondary">
               <div className="flex gap-2">
                 <div className="w-3 h-3 rounded-full bg-red-500/80" />
                 <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
@@ -98,7 +98,7 @@ export function HeroSection({ className }: React.HTMLAttributes<HTMLDivElement>)
                 <span className="text-foreground">model = aml.train(dataset, target="fraud")</span>
               </div>
               
-              <div className="pt-4 border-t border-white/5 space-y-3">
+              <div className="pt-4 border-t border-border/50 space-y-3">
                 <div className="text-muted-foreground">Initializing parallel training pool (12 workers)...</div>
                 
                 <div className="space-y-1">
@@ -106,7 +106,7 @@ export function HeroSection({ className }: React.HTMLAttributes<HTMLDivElement>)
                     <span className="text-accent">XGBoost [gpu:0]</span>
                     <span className="text-success">98.4%</span>
                   </div>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
                     <motion.div 
                       className="h-full bg-success rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)]"
                       initial={{ width: "0%" }}
@@ -121,7 +121,7 @@ export function HeroSection({ className }: React.HTMLAttributes<HTMLDivElement>)
                     <span className="text-accent">Random Forest [cpu:1]</span>
                     <span className="text-muted-foreground">94.1%</span>
                   </div>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
                     <motion.div 
                       className="h-full bg-white/30 rounded-full"
                       initial={{ width: "0%" }}
@@ -136,7 +136,7 @@ export function HeroSection({ className }: React.HTMLAttributes<HTMLDivElement>)
                     <span className="text-accent">LightGBM [gpu:1]</span>
                     <span className="text-primary animate-pulse">Training...</span>
                   </div>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden relative">
+                  <div className="h-1.5 bg-secondary rounded-full overflow-hidden relative">
                     <motion.div 
                       className="absolute top-0 bottom-0 left-0 bg-primary/50 rounded-full w-1/3"
                       animate={{ x: ["-100%", "300%"] }}

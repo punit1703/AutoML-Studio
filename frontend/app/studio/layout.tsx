@@ -9,7 +9,7 @@ export default function StudioLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen w-full bg-background overflow-hidden text-foreground selection:bg-primary/40 selection:text-white">
+    <div className="flex h-screen w-full bg-background overflow-hidden text-foreground selection:bg-primary/40 selection:text-foreground">
       {/* Sidebar (Fixed Width, Full Height) */}
       <StudioSidebar />
 
@@ -19,7 +19,7 @@ export default function StudioLayout({
         <StudioTopNavbar />
 
         {/* Workspace Area (Scrollable) */}
-        <main className="flex-1 overflow-auto bg-[#000000] relative">
+        <main className="flex-1 overflow-auto bg-background relative">
           {/* Subtle Grid Background for the Workspace */}
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f15_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f15_1px,transparent_1px)] bg-[size:3rem_3rem] pointer-events-none" />
           

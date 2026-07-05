@@ -8,6 +8,8 @@ import { useAppContext } from "@/context/AppContext";
 import api from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { ThemeToggle } from "@/components/theme-toggle";
+
 export function StudioTopNavbar() {
   const { projectId, setProjectId, datasetId, setDatasetId } = useAppContext();
   const [recentlySaved, setRecentlySaved] = useState(false);
@@ -46,10 +48,10 @@ export function StudioTopNavbar() {
 
   return (
     <>
-      <header className="h-14 bg-[#09090b] border-b border-white/10 flex items-center justify-between px-4 shrink-0">
+      <header className="h-14 bg-background border-b border-border flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-4 flex-1">
           {/* Project Name (Editable style) */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-white/5 cursor-pointer transition-colors group">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-secondary cursor-pointer transition-colors group">
             <Code2 className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
             <span className="text-sm font-semibold text-foreground">
               {projectName}
@@ -63,10 +65,10 @@ export function StudioTopNavbar() {
               <select
                 value={datasetId || ""}
                 onChange={(e) => setDatasetId(e.target.value)}
-                className="bg-transparent border border-white/10 text-xs font-mono text-muted-foreground outline-none cursor-pointer rounded px-2 py-1 hover:text-white hover:border-white/20 transition-colors max-w-[200px]"
+                className="bg-transparent border border-border text-xs font-mono text-muted-foreground outline-none cursor-pointer rounded px-2 py-1 hover:text-foreground hover:border-muted-foreground/50 transition-colors max-w-[200px]"
               >
                 {datasets.map(d => (
-                  <option key={d.id} value={d.id} className="bg-[#09090b]">
+                  <option key={d.id} value={d.id} className="bg-background">
                     {d.file_name}
                   </option>
                 ))}
@@ -81,11 +83,11 @@ export function StudioTopNavbar() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input 
               placeholder="Search datasets, models, or settings..." 
-              className="w-full h-9 pl-9 pr-4 bg-[#18181b] border-white/10 font-mono text-xs text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/20 rounded-md shadow-inner"
+              className="w-full h-9 pl-9 pr-4 bg-muted border-border font-mono text-xs text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/20 rounded-md shadow-inner"
             />
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
-              <kbd className="px-1.5 py-0.5 rounded border border-white/10 bg-[#09090b] text-[10px] font-mono text-muted-foreground">⌘</kbd>
-              <kbd className="px-1.5 py-0.5 rounded border border-white/10 bg-[#09090b] text-[10px] font-mono text-muted-foreground">K</kbd>
+              <kbd className="px-1.5 py-0.5 rounded border border-border bg-background text-[10px] font-mono text-muted-foreground">⌘</kbd>
+              <kbd className="px-1.5 py-0.5 rounded border border-border bg-background text-[10px] font-mono text-muted-foreground">K</kbd>
             </div>
           </div>
         </div>
@@ -99,7 +101,7 @@ export function StudioTopNavbar() {
                   setDatasetId(null);
                   window.location.href = "/studio/upload";
                 }}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-secondary border border-border hover:bg-muted transition-colors"
               >
                 New Project
               </button>
@@ -111,7 +113,7 @@ export function StudioTopNavbar() {
                 className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
                   recentlySaved 
                     ? "bg-success/10 text-success border border-success/20 cursor-default" 
-                    : "bg-primary text-black hover:bg-primary/90 shadow-[0_0_10px_rgba(56,189,248,0.3)]"
+                    : "bg-primary text-background hover:bg-primary/90 shadow-[0_0_10px_rgba(56,189,248,0.3)]"
                 }`}
               >
                 {recentlySaved ? (
@@ -123,10 +125,7 @@ export function StudioTopNavbar() {
             </>
           )}
 
-          {/* Theme Toggle Placeholder */}
-          <button className="w-8 h-8 hidden sm:flex items-center justify-center rounded-md hover:bg-white/5 text-muted-foreground hover:text-primary transition-colors">
-            <Moon className="w-4 h-4" />
-          </button>
+          <ThemeToggle />
           
           {/* Profile Avatar */}
           <button className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary hover:shadow-[0_0_10px_rgba(56,189,248,0.3)] transition-all">
@@ -143,13 +142,13 @@ export function StudioTopNavbar() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-[#09090b] border border-white/10 rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
+              className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
             >
-              <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/[0.02]">
-                <h2 className="text-lg font-semibold text-white">Save Project</h2>
+              <div className="flex items-center justify-between p-4 border-b border-border bg-secondary/50">
+                <h2 className="text-lg font-semibold text-foreground">Save Project</h2>
                 <button 
                   onClick={() => setShowModal(false)}
-                  className="text-muted-foreground hover:text-white transition-colors p-1"
+                  className="text-muted-foreground hover:text-foreground transition-colors p-1"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -163,7 +162,7 @@ export function StudioTopNavbar() {
                     value={projectName}
                     onChange={(e) => setProjectName(e.target.value)}
                     placeholder="E.g., Customer Churn Prediction"
-                    className="bg-[#18181b] border-white/10 text-white placeholder:text-muted-foreground/50 focus-visible:ring-primary/50 h-10"
+                    className="bg-input border-border text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/50 h-10"
                     autoFocus
                   />
                   <p className="text-xs text-muted-foreground mt-2">
@@ -173,14 +172,14 @@ export function StudioTopNavbar() {
                 <div className="flex gap-3 justify-end pt-4">
                   <button 
                     onClick={() => setShowModal(false)}
-                    className="px-4 py-2 rounded-md text-sm font-medium bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                    className="px-4 py-2 rounded-md text-sm font-medium bg-secondary border border-border hover:bg-muted transition-colors"
                   >
                     Cancel
                   </button>
                   <button 
                     onClick={handleSave}
                     disabled={saving || !projectName.trim()}
-                    className="px-4 py-2 rounded-md text-sm font-medium bg-primary text-black hover:bg-primary/90 transition-colors shadow-[0_0_15px_rgba(56,189,248,0.4)] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 rounded-md text-sm font-medium bg-primary text-background hover:bg-primary/90 transition-colors shadow-[0_0_15px_rgba(56,189,248,0.4)] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     Save Project

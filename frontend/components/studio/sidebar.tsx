@@ -42,8 +42,8 @@ export function StudioSidebar() {
   };
 
   return (
-    <div className="flex h-full w-64 flex-col bg-[#09090b] border-r border-white/10 shrink-0">
-      <div className="flex h-14 items-center px-4 border-b border-white/10">
+    <div className="flex h-full w-64 flex-col bg-sidebar border-r border-border shrink-0">
+      <div className="flex h-14 items-center px-4 border-b border-border">
         <Link href="/" className="flex items-center gap-2 font-bold text-base tracking-wide text-foreground hover:opacity-80 transition-opacity">
           <div className="bg-primary/20 p-1.5 rounded border border-primary/30 shadow-[0_0_10px_rgba(56,189,248,0.2)]">
             <Database className="w-4 h-4 text-primary" />
@@ -55,7 +55,7 @@ export function StudioSidebar() {
       <div className="px-3 py-4">
         <button
           onClick={handleNewProject}
-          className="w-full flex items-center justify-center gap-2 bg-primary text-black font-semibold rounded-md py-2 hover:bg-primary/90 transition-colors shadow-[0_0_10px_rgba(56,189,248,0.2)]"
+          className="w-full flex items-center justify-center gap-2 bg-primary text-background font-semibold rounded-md py-2 hover:bg-primary/90 transition-colors shadow-[0_0_10px_rgba(56,189,248,0.2)]"
         >
           <Plus className="w-4 h-4" />
           New Project
@@ -75,7 +75,7 @@ export function StudioSidebar() {
                 "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200",
                 isActive
                   ? "text-primary bg-primary/10"
-                  : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
               {isActive && (
@@ -93,7 +93,7 @@ export function StudioSidebar() {
         })}
       </nav>
       
-      <div className="p-4 border-t border-white/10 text-xs font-mono text-muted-foreground">
+      <div className="p-4 border-t border-border text-xs font-mono text-muted-foreground">
         <div className="flex items-center gap-2 mb-2">
           <div className="w-2 h-2 rounded-full bg-success animate-pulse shadow-[0_0_5px_rgba(34,197,94,0.5)]" />
           <span>Cluster Online</span>

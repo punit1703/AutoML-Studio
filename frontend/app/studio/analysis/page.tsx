@@ -113,7 +113,7 @@ export default function DatasetAnalysisPage() {
     return (
       <div className="flex flex-col items-center justify-center h-[50vh] space-y-4">
         <FileWarning className="w-12 h-12 text-muted-foreground" />
-        <h2 className="text-xl font-bold text-white">No Dataset Found</h2>
+        <h2 className="text-xl font-bold text-foreground">No Dataset Found</h2>
         <p className="text-muted-foreground text-sm">Please upload a dataset first.</p>
         <Button onClick={() => router.push("/studio/upload")}>Go to Upload</Button>
       </div>
@@ -132,7 +132,7 @@ export default function DatasetAnalysisPage() {
     <div className="space-y-6">
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-white/5 border-white/10">
+        <Card className="bg-secondary border-border">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -142,7 +142,7 @@ export default function DatasetAnalysisPage() {
                 </CardTitle>
                 <CardDescription>Age distribution across the dataset</CardDescription>
               </div>
-              <select className="bg-black/50 border border-white/10 rounded-md text-sm p-1.5 text-white outline-none focus:ring-1 focus:ring-primary">
+              <select className="bg-secondary/50 border border-border rounded-md text-sm p-1.5 text-foreground outline-none focus:ring-1 focus:ring-primary">
                 <option>Age</option>
                 <option>Income</option>
                 <option>Credit_Score</option>
@@ -163,7 +163,7 @@ export default function DatasetAnalysisPage() {
                   <XAxis dataKey="name" stroke="#ffffff50" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="#ffffff50" fontSize={12} tickLine={false} axisLine={false} />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#09090b', borderColor: '#ffffff20', borderRadius: '8px' }}
+                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
                     itemStyle={{ color: '#38bdf8' }}
                   />
                   <Area type="monotone" dataKey="count" stroke="#38bdf8" strokeWidth={2} fillOpacity={1} fill="url(#colorCount)" />
@@ -173,7 +173,7 @@ export default function DatasetAnalysisPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/5 border-white/10">
+        <Card className="bg-secondary border-border">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <FileWarning className="w-5 h-5 text-amber-500" />
@@ -186,7 +186,7 @@ export default function DatasetAnalysisPage() {
               <table className="w-full text-sm">
                 <tbody className="divide-y divide-white/5 text-muted-foreground">
                   {Object.entries(analysis.missing_values).slice(0, 5).map(([name, missing]: any, i) => (
-                    <tr key={i} className="hover:bg-white/[0.02] transition-colors">
+                    <tr key={i} className="hover:bg-secondary/50 transition-colors">
                       <td className="px-6 py-4">{name}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
@@ -196,7 +196,7 @@ export default function DatasetAnalysisPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="w-full bg-black/50 rounded-full h-1.5 overflow-hidden">
+                        <div className="w-full bg-secondary/50 rounded-full h-1.5 overflow-hidden">
                           <div 
                             className={`h-full rounded-full ${missing > 0 ? 'bg-amber-500' : 'bg-success'}`} 
                             style={{ width: `${Math.min(100, (missing / analysis.shape.rows) * 100)}%` }}
@@ -213,8 +213,8 @@ export default function DatasetAnalysisPage() {
       </div>
 
       {/* Data Types Table */}
-      <Card className="bg-white/5 border-white/10 overflow-hidden">
-        <CardHeader className="border-b border-white/5 pb-4">
+      <Card className="bg-secondary border-border overflow-hidden">
+        <CardHeader className="border-b border-border/50 pb-4">
           <CardTitle className="text-lg flex items-center gap-2">
             <ListFilter className="w-5 h-5 text-purple-500" />
             Data Types & Schema
@@ -222,7 +222,7 @@ export default function DatasetAnalysisPage() {
         </CardHeader>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="text-xs text-muted-foreground uppercase bg-white/5">
+            <thead className="text-xs text-muted-foreground uppercase bg-secondary">
               <tr>
                 <th className="px-6 py-4 font-medium">Column Name</th>
                 <th className="px-6 py-4 font-medium">Data Type</th>
@@ -232,8 +232,8 @@ export default function DatasetAnalysisPage() {
             </thead>
             <tbody className="divide-y divide-white/5">
               {dataTypesData.map((row, i) => (
-                <tr key={i} className="hover:bg-white/5 transition-colors">
-                  <td className="px-6 py-4 font-medium text-white flex items-center gap-2">
+                <tr key={i} className="hover:bg-secondary transition-colors">
+                  <td className="px-6 py-4 font-medium text-foreground flex items-center gap-2">
                     {row.column === "Churn" && <Target className="w-4 h-4 text-emerald-500" />}
                     {row.column}
                   </td>
@@ -259,8 +259,8 @@ export default function DatasetAnalysisPage() {
   );
 
   const renderStatistics = () => (
-    <Card className="bg-white/5 border-white/10 overflow-hidden">
-      <CardHeader className="border-b border-white/5 pb-4">
+    <Card className="bg-secondary border-border overflow-hidden">
+      <CardHeader className="border-b border-border/50 pb-4">
         <CardTitle className="text-lg flex items-center gap-2">
           <PieChart className="w-5 h-5 text-blue-500" />
           Numerical Statistics
@@ -269,7 +269,7 @@ export default function DatasetAnalysisPage() {
       </CardHeader>
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left">
-          <thead className="text-xs text-muted-foreground uppercase bg-white/5">
+          <thead className="text-xs text-muted-foreground uppercase bg-secondary">
             <tr>
               <th className="px-6 py-4 font-medium">Column Name</th>
               <th className="px-6 py-4 font-medium">Mean</th>
@@ -280,8 +280,8 @@ export default function DatasetAnalysisPage() {
           </thead>
           <tbody className="divide-y divide-white/5 text-muted-foreground font-mono">
             {Object.keys(analysis.statistics).map((col, i) => (
-              <tr key={i} className="hover:bg-white/[0.02] transition-colors">
-                <td className="px-6 py-4 text-white">{col}</td>
+              <tr key={i} className="hover:bg-secondary/50 transition-colors">
+                <td className="px-6 py-4 text-foreground">{col}</td>
                 <td className="px-6 py-4">{Number(analysis.statistics[col].mean)?.toFixed(2) || '-'}</td>
                 <td className="px-6 py-4">{Number(analysis.statistics[col].min)?.toFixed(2) || '-'}</td>
                 <td className="px-6 py-4">{Number(analysis.statistics[col].max)?.toFixed(2) || '-'}</td>
@@ -309,7 +309,7 @@ export default function DatasetAnalysisPage() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {dynamicTargetSuggestions.map((sug, i) => (
-          <Card key={i} className="bg-white/5 border-white/10 relative overflow-hidden group hover:border-primary/50 transition-colors">
+          <Card key={i} className="bg-secondary border-border relative overflow-hidden group hover:border-primary/50 transition-colors">
             <div className="absolute top-0 right-0 p-4">
               <div className="flex flex-col items-end">
                 <span className="text-xs text-muted-foreground mb-1">Confidence</span>
@@ -325,7 +325,7 @@ export default function DatasetAnalysisPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="bg-black/40 rounded-md p-3 border border-white/5">
+                <div className="bg-secondary/80 rounded-md p-3 border border-border/50">
                   <p className="text-xs text-muted-foreground mb-1">Problem Type</p>
                   <p className="font-medium text-sm flex items-center gap-2">
                     <Target className="w-4 h-4 text-emerald-500" />
@@ -334,7 +334,7 @@ export default function DatasetAnalysisPage() {
                 </div>
                 <Button 
                   variant={i === 0 ? "default" : "outline"} 
-                  className={i === 0 ? "w-full shadow-[0_0_15px_rgba(56,189,248,0.3)]" : "w-full border-white/10 text-white hover:bg-white/10"}
+                  className={i === 0 ? "w-full shadow-[0_0_15px_rgba(56,189,248,0.3)]" : "w-full border-border text-foreground hover:bg-white/10"}
                 >
                   {i === 0 ? "Select as Target" : "Set as Target"}
                 </Button>
@@ -344,8 +344,8 @@ export default function DatasetAnalysisPage() {
         ))}
       </div>
       
-      <Card className="bg-white/5 border-white/10 overflow-hidden">
-        <CardHeader className="border-b border-white/5 pb-4">
+      <Card className="bg-secondary border-border overflow-hidden">
+        <CardHeader className="border-b border-border/50 pb-4">
           <CardTitle className="text-lg flex items-center gap-2">
             <Target className="w-5 h-5 text-emerald-500" />
             Target Suggestions Overview
@@ -354,7 +354,7 @@ export default function DatasetAnalysisPage() {
         </CardHeader>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="text-xs text-muted-foreground uppercase bg-white/5">
+            <thead className="text-xs text-muted-foreground uppercase bg-secondary">
               <tr>
                 <th className="px-6 py-4 font-medium">Column Name</th>
                 <th className="px-6 py-4 font-medium">Suggested Task</th>
@@ -364,8 +364,8 @@ export default function DatasetAnalysisPage() {
             </thead>
             <tbody className="divide-y divide-white/5">
               {dynamicTargetSuggestions.map((row, i) => (
-                <tr key={i} className="hover:bg-white/5 transition-colors">
-                  <td className="px-6 py-4 font-medium text-white">{row.column}</td>
+                <tr key={i} className="hover:bg-secondary transition-colors">
+                  <td className="px-6 py-4 font-medium text-foreground">{row.column}</td>
                   <td className="px-6 py-4">
                     <span className="flex items-center gap-2">
                       <Target className="w-4 h-4 text-emerald-500" />
@@ -374,7 +374,7 @@ export default function DatasetAnalysisPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-full bg-black/50 rounded-full h-2 max-w-[100px]">
+                      <div className="w-full bg-secondary/50 rounded-full h-2 max-w-[100px]">
                         <div 
                           className="bg-primary h-2 rounded-full" 
                           style={{ width: row.confidence }}
@@ -403,7 +403,7 @@ export default function DatasetAnalysisPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">
               <BarChart3 className="w-6 h-6 text-primary" />
             </div>
@@ -414,7 +414,7 @@ export default function DatasetAnalysisPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="border-white/10 text-white hover:bg-white/10" onClick={() => router.push("/studio/downloads")}>
+          <Button variant="outline" className="border-border text-foreground hover:bg-white/10" onClick={() => router.push("/studio/downloads")}>
             Export Report
           </Button>
           <Button className="shadow-[0_0_15px_rgba(56,189,248,0.4)]" onClick={() => router.push("/studio/cleaning")}>
@@ -434,14 +434,14 @@ export default function DatasetAnalysisPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
             >
-              <Card className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors cursor-default h-full">
+              <Card className="bg-secondary border-border hover:bg-white/10 transition-colors cursor-default h-full">
                 <CardContent className="p-5 flex flex-col items-center justify-center text-center gap-3">
                   <div className={`p-3 rounded-full ${metric.bg} ${metric.color}`}>
                     <Icon className="w-6 h-6" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">{metric.title}</p>
-                    <h3 className="text-2xl font-bold text-white mt-1">{metric.value}</h3>
+                    <h3 className="text-2xl font-bold text-foreground mt-1">{metric.value}</h3>
                   </div>
                 </CardContent>
               </Card>
@@ -451,7 +451,7 @@ export default function DatasetAnalysisPage() {
       </div>
 
       {/* Custom Tabs */}
-      <div className="flex items-center gap-2 border-b border-white/10 pb-px">
+      <div className="flex items-center gap-2 border-b border-border pb-px">
         {[
           { id: "overview", label: "Overview & Charts", icon: PieChart },
           { id: "statistics", label: "Descriptive Statistics", icon: TableProperties },
@@ -466,7 +466,7 @@ export default function DatasetAnalysisPage() {
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors relative ${
                 isActive 
                   ? 'border-primary text-primary' 
-                  : 'border-transparent text-muted-foreground hover:text-white hover:border-white/30'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-white/30'
               }`}
             >
               <Icon className="w-4 h-4" />

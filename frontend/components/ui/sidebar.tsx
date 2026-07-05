@@ -14,7 +14,7 @@ export function Sidebar({ className }: React.HTMLAttributes<HTMLDivElement>) {
       <div className="flex h-16 items-center px-6 py-4 font-bold text-xl tracking-wide border-b border-sidebar/20">
         <div className="flex items-center gap-2">
           <div className="bg-primary p-1.5 rounded-lg">
-            <Database className="w-5 h-5 text-white" />
+            <Database className="w-5 h-5 text-foreground" />
           </div>
           AutoML Studio
         </div>

@@ -57,6 +57,7 @@ export default function EvaluationPage() {
   const [loading, setLoading] = useState(true);
   
   const [evaluationData, setEvaluationData] = useState<any>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (datasetId) {
@@ -79,12 +80,13 @@ export default function EvaluationPage() {
             setEvaluationData(evalRes.data);
             setLoading(false);
           }).catch(err => {
-            console.error(err);
+            const msg = err.response?.data?.[0] || err.response?.data?.error || "Failed to evaluate models.";
+            setErrorMessage(msg);
             setLoading(false);
           });
         }
       }).catch(err => {
-        console.error(err);
+        setErrorMessage("Failed to analyze dataset.");
         setLoading(false);
       });
     }
@@ -94,8 +96,23 @@ export default function EvaluationPage() {
     return <div className="w-full flex items-center justify-center p-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
   
+  if (errorMessage) {
+    return (
+      <div className="w-full h-[50vh] flex flex-col items-center justify-center p-12 text-center space-y-4">
+        <div className="p-4 bg-error/10 text-error rounded-full mb-2">
+          <Activity className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-foreground">Evaluation Unavailable</h2>
+        <p className="text-muted-foreground max-w-md">{errorMessage}</p>
+        <Button onClick={() => router.push("/studio/training")} className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90">
+          Go to Training
+        </Button>
+      </div>
+    );
+  }
+
   if (!evaluationData) {
-    return <div className="text-center p-12 text-muted-foreground">Evaluation failed or no model trained. Please go back to Training.</div>;
+    return <div className="text-center p-12 text-muted-foreground">Loading evaluation data...</div>;
   }
 
   const results = evaluationData.evaluation_results || [];
@@ -145,7 +162,7 @@ export default function EvaluationPage() {
         className="flex flex-col md:flex-row md:items-center justify-between gap-4"
       >
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">
               <Trophy className="w-6 h-6 text-primary" />
             </div>
@@ -156,17 +173,17 @@ export default function EvaluationPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="border-white/10 text-white hover:bg-white/10" onClick={() => router.push("/studio/downloads")}>
+          <Button variant="outline" className="border-border text-foreground hover:bg-white/10" onClick={() => router.push("/studio/downloads")}>
             <Download className="w-4 h-4 mr-2" /> Export Report
           </Button>
-          <Button className="bg-success text-black hover:bg-success/90 shadow-[0_0_15px_rgba(34,197,94,0.4)]" onClick={() => router.push("/studio/downloads")}>
+          <Button className="bg-success text-background hover:bg-success/90 shadow-[0_0_15px_rgba(34,197,94,0.4)]" onClick={() => router.push("/studio/downloads")}>
             Deploy Best Model <CheckCircle2 className="w-4 h-4 ml-2" />
           </Button>
         </div>
       </motion.div>
 
       {/* Custom Tabs */}
-      <div className="flex items-center gap-2 border-b border-white/10 pb-px">
+      <div className="flex items-center gap-2 border-b border-border pb-px">
         {[
           { id: "dashboard", label: "Overview Dashboard", icon: BarChart4 },
           { id: "charts", label: "Diagnostic Charts", icon: Activity },
@@ -180,7 +197,7 @@ export default function EvaluationPage() {
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors relative ${
                 isActive 
                   ? 'border-primary text-primary' 
-                  : 'border-transparent text-muted-foreground hover:text-white hover:border-white/30'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-white/30'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -212,18 +229,18 @@ export default function EvaluationPage() {
                     <Trophy className="w-5 h-5 text-primary" />
                     <span className="text-sm font-medium text-primary">Best Performing Model</span>
                   </div>
-                  <h2 className="text-3xl font-bold text-white mb-1">{bestModelName}</h2>
+                  <h2 className="text-3xl font-bold text-foreground mb-1">{bestModelName}</h2>
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <GitCommit className="w-4 h-4" /> Selected automatically based on {problemType === 'regression' ? 'R2 Score' : 'Accuracy/F1'}
                   </p>
                 </CardContent>
               </Card>
               
-              <Card className="bg-white/5 border-white/10">
+              <Card className="bg-secondary border-border">
                 <CardContent className="p-6 flex flex-col justify-center items-center text-center h-full">
                   <Target className="w-6 h-6 text-emerald-500 mb-2" />
                   <p className="text-sm font-medium text-muted-foreground">{problemType === 'regression' ? 'R2 Score' : 'Accuracy'}</p>
-                  <h3 className="text-3xl font-bold text-white mt-1">
+                  <h3 className="text-3xl font-bold text-foreground mt-1">
                     {problemType === 'regression' 
                       ? (bestModelMetrics.r2 || 0).toFixed(3)
                       : ((bestModelMetrics.accuracy || 0) * 100).toFixed(1) + "%"}
@@ -231,11 +248,11 @@ export default function EvaluationPage() {
                 </CardContent>
               </Card>
               
-              <Card className="bg-white/5 border-white/10">
+              <Card className="bg-secondary border-border">
                 <CardContent className="p-6 flex flex-col justify-center items-center text-center h-full">
                   <TrendingUp className="w-6 h-6 text-purple-500 mb-2" />
                   <p className="text-sm font-medium text-muted-foreground">{problemType === 'regression' ? 'RMSE' : 'ROC AUC'}</p>
-                  <h3 className="text-3xl font-bold text-white mt-1">
+                  <h3 className="text-3xl font-bold text-foreground mt-1">
                     {problemType === 'regression'
                       ? (bestModelMetrics.rmse || 0).toFixed(3)
                       : (bestModelMetrics.roc?.auc || 0).toFixed(3)}
@@ -247,7 +264,7 @@ export default function EvaluationPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Comparison Table */}
               <motion.div variants={itemVariants} className="lg:col-span-2">
-                <Card className="bg-[#09090b] border-white/10 h-full">
+                <Card className="bg-card border-border h-full">
                   <CardHeader className="pb-4">
                     <div className="flex items-center gap-2">
                       <TableIcon className="w-5 h-5 text-indigo-400" />
@@ -256,7 +273,7 @@ export default function EvaluationPage() {
                   </CardHeader>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
-                      <thead className="text-xs text-muted-foreground uppercase bg-white/[0.02] border-b border-white/10">
+                      <thead className="text-xs text-muted-foreground uppercase bg-secondary/50 border-b border-border">
                         <tr>
                           <th className="px-6 py-4 font-medium">Model</th>
                           {problemType === 'regression' ? (
@@ -278,8 +295,8 @@ export default function EvaluationPage() {
                       </thead>
                       <tbody className="divide-y divide-white/5">
                         {comparisonData.map((row: any, i: number) => (
-                          <tr key={i} className={`hover:bg-white/5 transition-colors ${i === 0 ? 'bg-primary/5' : ''}`}>
-                            <td className="px-6 py-4 font-medium text-white flex items-center gap-2">
+                          <tr key={i} className={`hover:bg-secondary transition-colors ${i === 0 ? 'bg-primary/5' : ''}`}>
+                            <td className="px-6 py-4 font-medium text-foreground flex items-center gap-2">
                               {i === 0 && <Trophy className="w-4 h-4 text-primary" />}
                               {row.name}
                             </td>
@@ -295,7 +312,7 @@ export default function EvaluationPage() {
                                 <td className="px-6 py-4 text-muted-foreground">{row.precision.toFixed(3)}</td>
                                 <td className="px-6 py-4 text-muted-foreground">{row.recall.toFixed(3)}</td>
                                 <td className="px-6 py-4 text-muted-foreground">{row.f1.toFixed(3)}</td>
-                                <td className={`px-6 py-4 font-bold ${i === 0 ? 'text-primary' : 'text-white'}`}>{row.auc.toFixed(3)}</td>
+                                <td className={`px-6 py-4 font-bold ${i === 0 ? 'text-primary' : 'text-foreground'}`}>{row.auc.toFixed(3)}</td>
                               </>
                             )}
                           </tr>
@@ -308,7 +325,7 @@ export default function EvaluationPage() {
 
               {/* Feature Importance */}
               <motion.div variants={itemVariants} className="lg:col-span-1">
-                <Card className="bg-[#09090b] border-white/10 h-full flex flex-col">
+                <Card className="bg-card border-border h-full flex flex-col">
                   <CardHeader className="pb-2">
                     <div className="flex items-center gap-2">
                       <BarChart4 className="w-5 h-5 text-amber-500" />
@@ -340,7 +357,7 @@ export default function EvaluationPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* ROC Curve */}
             <motion.div variants={itemVariants}>
-              <Card className="bg-[#09090b] border-white/10 h-full flex flex-col">
+              <Card className="bg-card border-border h-full flex flex-col">
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="w-5 h-5 text-blue-500" />
@@ -372,7 +389,7 @@ export default function EvaluationPage() {
 
             {/* Confusion Matrix */}
             <motion.div variants={itemVariants}>
-              <Card className="bg-[#09090b] border-white/10 h-full flex flex-col">
+              <Card className="bg-card border-border h-full flex flex-col">
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-2">
                     <Grid2X2 className="w-5 h-5 text-purple-500" />
@@ -385,20 +402,20 @@ export default function EvaluationPage() {
                   <div className="relative w-full max-w-[400px]">
                     {/* Top Labels */}
                     <div className="flex justify-center mb-4">
-                      <div className="text-sm font-semibold text-white tracking-widest uppercase">Predicted Label</div>
+                      <div className="text-sm font-semibold text-foreground tracking-widest uppercase">Predicted Label</div>
                     </div>
                     
                     <div className="flex">
                       {/* Left Labels */}
                       <div className="flex flex-col justify-center mr-4 w-6">
-                        <div className="text-sm font-semibold text-white tracking-widest uppercase -rotate-90 whitespace-nowrap origin-center translate-y-[20px]">
+                        <div className="text-sm font-semibold text-foreground tracking-widest uppercase -rotate-90 whitespace-nowrap origin-center translate-y-[20px]">
                           True Label
                         </div>
                       </div>
                       
                       {/* Matrix Grid */}
                       <div className="flex-1">
-                        <div className="grid grid-cols-2 gap-2 text-center text-sm font-medium text-white mb-2">
+                        <div className="grid grid-cols-2 gap-2 text-center text-sm font-medium text-foreground mb-2">
                           <div>Negative (0)</div>
                           <div>Positive (1)</div>
                         </div>
@@ -406,36 +423,36 @@ export default function EvaluationPage() {
                         <div className="grid grid-cols-2 gap-2 aspect-square">
                           {/* TN */}
                           <div className="bg-primary/20 border border-primary/30 rounded-lg flex flex-col items-center justify-center p-4 relative group">
-                            <span className="text-3xl font-bold text-white">{tn}</span>
+                            <span className="text-3xl font-bold text-foreground">{tn}</span>
                             <span className="text-xs text-muted-foreground mt-1">True Negative</span>
-                            <span className="absolute top-2 right-2 text-[10px] text-white/50">{totalSamples > 0 ? ((tn / totalSamples) * 100).toFixed(1) : 0}%</span>
+                            <span className="absolute top-2 right-2 text-[10px] text-foreground/50">{totalSamples > 0 ? ((tn / totalSamples) * 100).toFixed(1) : 0}%</span>
                           </div>
                           
                           {/* FP */}
                           <div className="bg-rose-500/20 border border-rose-500/30 rounded-lg flex flex-col items-center justify-center p-4 relative group">
-                            <span className="text-3xl font-bold text-white">{fp}</span>
+                            <span className="text-3xl font-bold text-foreground">{fp}</span>
                             <span className="text-xs text-rose-300 mt-1">False Positive</span>
-                            <span className="absolute top-2 right-2 text-[10px] text-white/50">{totalSamples > 0 ? ((fp / totalSamples) * 100).toFixed(1) : 0}%</span>
+                            <span className="absolute top-2 right-2 text-[10px] text-foreground/50">{totalSamples > 0 ? ((fp / totalSamples) * 100).toFixed(1) : 0}%</span>
                           </div>
                           
                           {/* FN */}
                           <div className="bg-rose-500/20 border border-rose-500/30 rounded-lg flex flex-col items-center justify-center p-4 relative group">
-                            <span className="text-3xl font-bold text-white">{fn}</span>
+                            <span className="text-3xl font-bold text-foreground">{fn}</span>
                             <span className="text-xs text-rose-300 mt-1">False Negative</span>
-                            <span className="absolute top-2 right-2 text-[10px] text-white/50">{totalSamples > 0 ? ((fn / totalSamples) * 100).toFixed(1) : 0}%</span>
+                            <span className="absolute top-2 right-2 text-[10px] text-foreground/50">{totalSamples > 0 ? ((fn / totalSamples) * 100).toFixed(1) : 0}%</span>
                           </div>
                           
                           {/* TP */}
                           <div className="bg-primary/40 border border-primary/50 shadow-[0_0_15px_rgba(56,189,248,0.2)] rounded-lg flex flex-col items-center justify-center p-4 relative group">
-                            <span className="text-3xl font-bold text-white">{tp}</span>
+                            <span className="text-3xl font-bold text-foreground">{tp}</span>
                             <span className="text-xs text-primary-foreground mt-1">True Positive</span>
-                            <span className="absolute top-2 right-2 text-[10px] text-white/50">{totalSamples > 0 ? ((tp / totalSamples) * 100).toFixed(1) : 0}%</span>
+                            <span className="absolute top-2 right-2 text-[10px] text-foreground/50">{totalSamples > 0 ? ((tp / totalSamples) * 100).toFixed(1) : 0}%</span>
                           </div>
                         </div>
                         
                         <div className="flex flex-col justify-between h-full mt-2 absolute -left-12 top-10 bottom-6 py-12">
-                          <div className="text-sm font-medium text-white rotate-[-90deg] translate-y-[-20px]">Negative (0)</div>
-                          <div className="text-sm font-medium text-white rotate-[-90deg] translate-y-[20px]">Positive (1)</div>
+                          <div className="text-sm font-medium text-foreground rotate-[-90deg] translate-y-[-20px]">Negative (0)</div>
+                          <div className="text-sm font-medium text-foreground rotate-[-90deg] translate-y-[20px]">Positive (1)</div>
                         </div>
                       </div>
                     </div>

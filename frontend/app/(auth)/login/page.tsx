@@ -71,7 +71,7 @@ export default function LoginPage() {
       initial={{ y: 30, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      className="bg-[#09090b] border border-white/10 rounded-2xl p-8 shadow-2xl shadow-black/80 relative overflow-hidden"
+      className="bg-card border border-border rounded-2xl p-8 shadow-2xl shadow-black/80 relative overflow-hidden"
     >
       {/* Success Pulse Background */}
       <AnimatePresence>
@@ -110,7 +110,7 @@ export default function LoginPage() {
                 placeholder="developer@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`bg-[#18181b] border-white/10 text-foreground font-mono placeholder:text-muted-foreground/50 focus:border-primary focus:ring-primary/20 transition-all ${
+                className={`bg-secondary border-border text-foreground font-mono placeholder:text-muted-foreground/50 focus:border-primary focus:ring-primary/20 transition-all ${
                   emailError ? "border-error focus:border-error focus:ring-error/20" : ""
                 }`}
                 disabled={isSubmitting || isSuccess}
@@ -133,7 +133,7 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`bg-[#18181b] border-white/10 text-foreground font-mono placeholder:text-muted-foreground/50 focus:border-primary focus:ring-primary/20 transition-all pr-10 ${
+                className={`bg-secondary border-border text-foreground font-mono placeholder:text-muted-foreground/50 focus:border-primary focus:ring-primary/20 transition-all pr-10 ${
                   passwordError ? "border-error focus:border-error focus:ring-error/20" : ""
                 }`}
                 disabled={isSubmitting || isSuccess}
@@ -156,7 +156,7 @@ export default function LoginPage() {
             className={`w-full h-12 rounded-md font-mono font-semibold flex items-center justify-center transition-all ${
               isSuccess 
                 ? "bg-success text-success-foreground shadow-[0_0_20px_rgba(34,197,94,0.4)]"
-                : "bg-primary text-black hover:bg-primary/90 shadow-[0_0_15px_rgba(56,189,248,0.3)] hover:shadow-[0_0_25px_rgba(56,189,248,0.5)]"
+                : "bg-primary text-background hover:bg-primary/90 shadow-[0_0_15px_rgba(56,189,248,0.3)] hover:shadow-[0_0_25px_rgba(56,189,248,0.5)]"
             } disabled:opacity-80 disabled:cursor-not-allowed`}
           >
             <AnimatePresence mode="wait">

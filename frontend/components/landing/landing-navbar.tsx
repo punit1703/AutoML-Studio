@@ -15,7 +15,7 @@ export function LandingNavbar({ className }: React.HTMLAttributes<HTMLDivElement
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         className={cn(
-          "pointer-events-auto flex h-14 items-center justify-between rounded-full bg-background/50 px-6 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black w-full max-w-5xl",
+          "pointer-events-auto flex h-14 items-center justify-between rounded-full bg-background/50 px-6 backdrop-blur-xl border border-border shadow-2xl shadow-black w-full max-w-5xl",
           className
         )}
       >
@@ -34,10 +34,10 @@ export function LandingNavbar({ className }: React.HTMLAttributes<HTMLDivElement
         </nav>
 
         <div className="flex items-center gap-3">
-          <Link href="/login" className="hidden sm:inline-flex items-center justify-center rounded-full text-sm font-medium h-9 px-4 text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">
+          <Link href="/login" className="hidden sm:inline-flex items-center justify-center rounded-full text-sm font-medium h-9 px-4 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
             Log in
           </Link>
-          <Link href="/register" className="inline-flex items-center justify-center rounded-full h-9 px-5 text-sm font-medium bg-primary text-black hover:bg-primary/90 shadow-[0_0_15px_rgba(56,189,248,0.3)] hover:shadow-[0_0_25px_rgba(56,189,248,0.5)] transition-all">
+          <Link href="/register" className="inline-flex items-center justify-center rounded-full h-9 px-5 text-sm font-medium bg-primary text-background hover:bg-primary/90 shadow-[0_0_15px_rgba(56,189,248,0.3)] hover:shadow-[0_0_25px_rgba(56,189,248,0.5)] transition-all">
             Get Started
           </Link>
         </div>

@@ -45,7 +45,7 @@ export function AlgorithmsSection({ className }: React.HTMLAttributes<HTMLDivEle
                 initial: { opacity: 0, scale: 0.9, y: 20 },
                 animate: { opacity: 1, scale: 1, y: 0, transition: { delay: idx * 0.05, duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
               }}
-              className="px-6 py-3 rounded-md bg-[#09090b] border border-white/10 font-mono text-sm md:text-base shadow-sm hover:border-primary/50 hover:shadow-[0_0_15px_rgba(56,189,248,0.2)] transition-all duration-300 text-foreground flex items-center gap-2"
+              className="px-6 py-3 rounded-md bg-card border border-border font-mono text-sm md:text-base shadow-sm hover:border-primary/50 hover:shadow-[0_0_15px_rgba(56,189,248,0.2)] transition-all duration-300 text-foreground flex items-center gap-2"
             >
               <span className="text-primary">{`>`}</span> {algo}
             </motion.div>

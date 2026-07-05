@@ -8,10 +8,10 @@ export function StudioOutputPanel() {
   const [isExpanded, setIsExpanded] = React.useState(true);
 
   return (
-    <div className="border-t border-white/10 bg-[#09090b] flex flex-col shrink-0">
+    <div className="border-t border-border bg-card flex flex-col shrink-0">
       {/* Panel Header */}
       <div 
-        className="h-9 flex items-center justify-between px-4 border-b border-white/5 cursor-pointer hover:bg-white/5 transition-colors"
+        className="h-9 flex items-center justify-between px-4 border-b border-border/50 cursor-pointer hover:bg-muted transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-2 text-xs font-mono font-medium text-muted-foreground uppercase tracking-wider">
@@ -19,10 +19,10 @@ export function StudioOutputPanel() {
           Output Terminal
         </div>
         <div className="flex items-center gap-2">
-          <button className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded hover:bg-white/10">
+          <button className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded hover:bg-muted">
             {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
           </button>
-          <button className="text-muted-foreground hover:text-error transition-colors p-1 rounded hover:bg-white/10" onClick={(e) => { e.stopPropagation(); setIsExpanded(false); }}>
+          <button className="text-muted-foreground hover:text-error transition-colors p-1 rounded hover:bg-muted" onClick={(e) => { e.stopPropagation(); setIsExpanded(false); }}>
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -36,7 +36,7 @@ export function StudioOutputPanel() {
             animate={{ height: "200px" }}
             exit={{ height: 0 }}
             transition={{ type: "spring", stiffness: 400, damping: 40 }}
-            className="overflow-y-auto bg-[#000000] p-4 font-mono text-xs shadow-inner"
+            className="overflow-y-auto bg-background p-4 font-mono text-xs shadow-inner"
           >
             <div className="space-y-2">
               <div className="text-muted-foreground">AutoML Studio Initialized.</div>

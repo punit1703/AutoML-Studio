@@ -177,7 +177,7 @@ export default function DownloadsPage() {
         className="flex flex-col md:flex-row md:items-center justify-between gap-4"
       >
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">
               <HardDriveDownload className="w-6 h-6 text-primary" />
             </div>
@@ -192,7 +192,7 @@ export default function DownloadsPage() {
           <Button 
             onClick={() => router.push("/studio/dashboard")}
             variant="outline" 
-            className="border-white/10 hover:bg-white/5"
+            className="border-border hover:bg-secondary"
           >
             <Home className="w-4 h-4 mr-2" /> Dashboard
           </Button>
@@ -212,23 +212,23 @@ export default function DownloadsPage() {
           
           return (
             <motion.div key={item.id} variants={itemVariants}>
-              <Card className="bg-[#09090b] border-white/10 h-full flex flex-col hover:border-white/20 transition-colors">
+              <Card className="bg-card border-border h-full flex flex-col hover:border-white/20 transition-colors">
                 <CardContent className="p-6 flex flex-col h-full">
                   <div className="flex items-start justify-between mb-4">
                     <div className={`p-3 rounded-xl ${item.bg} ${item.color}`}>
                       <Icon className="w-6 h-6" />
                     </div>
-                    <div className="text-xs font-medium px-2 py-1 bg-white/5 rounded text-muted-foreground">
+                    <div className="text-xs font-medium px-2 py-1 bg-secondary rounded text-muted-foreground">
                       {item.format}
                     </div>
                   </div>
                   
-                  <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">{item.title}</h3>
                   <p className="text-sm text-muted-foreground flex-1 mb-6">
                     {item.description}
                   </p>
                   
-                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
+                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/50">
                     <span className="text-xs text-muted-foreground">{item.size}</span>
                     <Button 
                       onClick={() => handleDownload(item)}
@@ -262,18 +262,18 @@ export default function DownloadsPage() {
               initial={{ opacity: 0, y: 20, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-              className="bg-black border border-white/10 p-4 rounded-lg shadow-xl w-80 pointer-events-auto flex items-start gap-3"
+              className="bg-black border border-border p-4 rounded-lg shadow-xl w-80 pointer-events-auto flex items-start gap-3"
             >
               <div className="mt-0.5">
                 <CheckCircle2 className="w-5 h-5 text-success" />
               </div>
               <div className="flex-1">
-                <h4 className="text-sm font-semibold text-white">{toast.title}</h4>
+                <h4 className="text-sm font-semibold text-foreground">{toast.title}</h4>
                 <p className="text-xs text-muted-foreground mt-1">{toast.description}</p>
               </div>
               <button 
                 onClick={() => removeToast(toast.id)}
-                className="text-muted-foreground hover:text-white"
+                className="text-muted-foreground hover:text-foreground"
               >
                 &times;
               </button>

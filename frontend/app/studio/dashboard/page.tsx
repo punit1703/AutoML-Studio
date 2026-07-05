@@ -103,7 +103,7 @@ export default function DashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             >
-              <Card className="bg-[#09090b] border-white/10 hover:border-primary/50 transition-colors shadow-sm overflow-hidden relative group h-full">
+              <Card className="bg-card border-border hover:border-primary/50 transition-colors shadow-sm overflow-hidden relative group h-full">
                 <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -137,7 +137,7 @@ export default function DashboardPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       >
-        <Card className="bg-[#09090b] border-white/10 shadow-sm">
+        <Card className="bg-card border-border shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <FolderOpen className="w-5 h-5 text-primary" />
@@ -146,7 +146,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             {projects.length === 0 ? (
-              <div className="h-64 flex flex-col items-center justify-center text-muted-foreground border border-dashed border-white/10 rounded-lg bg-[#000000]">
+              <div className="h-64 flex flex-col items-center justify-center text-muted-foreground border border-dashed border-border rounded-lg bg-secondary/50">
                 <Database className="w-8 h-8 mb-3 opacity-20" />
                 <p className="text-sm">No saved projects found.</p>
                 <p className="text-xs mt-1">Complete a training pipeline and save it to see it here.</p>
@@ -156,12 +156,12 @@ export default function DashboardPage() {
                 {projects.map((project: any) => (
                   <div 
                     key={project.id}
-                    className="p-4 rounded-xl border border-white/10 bg-[#000000] hover:border-primary/50 transition-all cursor-pointer group flex flex-col"
+                    className="p-4 rounded-xl border border-border bg-secondary hover:border-primary/50 transition-all cursor-pointer group flex flex-col"
                     onClick={() => resumeProject(project)}
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-semibold text-white truncate pr-2">{project.title}</h3>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap bg-white/5 px-2 py-1 rounded">
+                      <h3 className="font-semibold text-foreground truncate pr-2">{project.title}</h3>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap bg-secondary px-2 py-1 rounded">
                         {new Date(project.created_at).toLocaleDateString()}
                       </span>
                     </div>

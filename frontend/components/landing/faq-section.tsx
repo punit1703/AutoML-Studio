@@ -26,7 +26,7 @@ export function FaqSection({ className }: React.HTMLAttributes<HTMLDivElement>) 
   ];
 
   return (
-    <section id="faq" className={cn("py-32 bg-background relative border-t border-white/5", className)}>
+    <section id="faq" className={cn("py-32 bg-background relative border-t border-border/50", className)}>
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-secondary/20 pointer-events-none" />
       
       <div className="max-w-3xl mx-auto px-6 relative z-10">
@@ -51,13 +51,13 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
   const [isOpen, setIsOpen] = React.useState(false);
 
   return (
-    <div className="border border-white/10 bg-[#09090b] rounded-md overflow-hidden transition-colors hover:border-primary/30 shadow-sm hover:shadow-[0_0_10px_rgba(56,189,248,0.1)]">
+    <div className="border border-border bg-card rounded-md overflow-hidden transition-colors hover:border-primary/30 shadow-sm hover:shadow-[0_0_10px_rgba(56,189,248,0.1)]">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between p-6 text-left focus:outline-none group"
       >
         <span className="font-mono text-base md:text-lg group-hover:text-primary transition-colors text-foreground">{question}</span>
-        <div className={cn("w-8 h-8 rounded-md bg-[#18181b] border border-white/10 flex items-center justify-center transition-transform duration-300", isOpen && "rotate-45 border-primary/30 text-primary shadow-[0_0_10px_rgba(56,189,248,0.2)]")}>
+        <div className={cn("w-8 h-8 rounded-md bg-secondary border border-border flex items-center justify-center transition-transform duration-300", isOpen && "rotate-45 border-primary/30 text-primary shadow-[0_0_10px_rgba(56,189,248,0.2)]")}>
           <Plus className="w-4 h-4" />
         </div>
       </button>
@@ -69,7 +69,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="pb-6 px-6 text-muted-foreground text-sm font-mono leading-relaxed border-t border-white/5 pt-4 bg-[#09090b]">
+            <div className="pb-6 px-6 text-muted-foreground text-sm font-mono leading-relaxed border-t border-border/50 pt-4 bg-card">
               <span className="text-primary mr-2">❯</span>
               {answer}
             </div>

@@ -138,7 +138,7 @@ export default function ModelTrainingPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">
               <Cpu className="w-6 h-6 text-primary" />
             </div>
@@ -153,7 +153,7 @@ export default function ModelTrainingPage() {
               value={targetColumn} 
               onChange={e => setTargetColumn(e.target.value)}
               disabled={trainingState !== "idle"}
-              className="bg-black/50 border border-white/10 rounded-md text-sm p-2 text-white outline-none focus:ring-1 focus:ring-primary h-10 w-48"
+              className="bg-secondary/50 border border-border rounded-md text-sm p-2 text-foreground outline-none focus:ring-1 focus:ring-primary h-10 w-48"
             >
               <option value="" disabled>Select Target Column</option>
               {columns.map(c => <option key={c} value={c}>{c}</option>)}
@@ -164,7 +164,7 @@ export default function ModelTrainingPage() {
                 <StopCircle className="w-4 h-4 mr-2" /> Stop Training
               </Button>
             ) : trainingState === "completed" ? (
-              <Button onClick={() => router.push("/studio/evaluation")} className="bg-success text-black hover:bg-success/90 shadow-[0_0_15px_rgba(34,197,94,0.4)]">
+              <Button onClick={() => router.push("/studio/evaluation")} className="bg-success text-background hover:bg-success/90 shadow-[0_0_15px_rgba(34,197,94,0.4)]">
                 Continue to Evaluation <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             ) : (
@@ -178,7 +178,7 @@ export default function ModelTrainingPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Algorithms & Status */}
         <div className="lg:col-span-1 space-y-6">
-          <Card className="bg-[#09090b] border-white/10">
+          <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle className="text-lg">Algorithms Setup</CardTitle>
               <CardDescription>Select models to include in the ensemble</CardDescription>
@@ -202,16 +202,16 @@ export default function ModelTrainingPage() {
                     } ${
                       isSelected 
                         ? isCurrent ? 'bg-primary/5 border-primary/50 shadow-[0_0_10px_rgba(56,189,248,0.2)]' 
-                        : 'bg-white/5 border-white/20' 
-                        : 'bg-black/40 border-white/5 opacity-50'
+                        : 'bg-secondary border-white/20' 
+                        : 'bg-secondary/80 border-border/50 opacity-50'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${isSelected ? algo.bg : 'bg-white/5'} ${isSelected ? algo.color : 'text-muted-foreground'}`}>
+                      <div className={`p-2 rounded-lg ${isSelected ? algo.bg : 'bg-secondary'} ${isSelected ? algo.color : 'text-muted-foreground'}`}>
                         <Icon className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="font-medium text-white text-sm">{algo.name}</div>
+                        <div className="font-medium text-foreground text-sm">{algo.name}</div>
                         <div className="text-xs text-muted-foreground">Est. {algo.timeEstimate}</div>
                       </div>
                     </div>
@@ -220,7 +220,7 @@ export default function ModelTrainingPage() {
                     <div className="flex items-center">
                       {trainingState === "idle" && (
                         <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
-                          isSelected ? 'bg-primary border-primary text-black' : 'border-white/20'
+                          isSelected ? 'bg-primary border-primary text-background' : 'border-white/20'
                         }`}>
                           {isSelected && <CheckCircle2 className="w-3 h-3" />}
                         </div>
@@ -239,7 +239,7 @@ export default function ModelTrainingPage() {
                       )}
                       
                       {isPending && isSelected && (
-                        <span className="flex items-center text-xs font-medium text-muted-foreground bg-white/5 px-2 py-1 rounded-full border border-white/10">
+                        <span className="flex items-center text-xs font-medium text-muted-foreground bg-secondary px-2 py-1 rounded-full border border-border">
                           Pending
                         </span>
                       )}
@@ -253,8 +253,8 @@ export default function ModelTrainingPage() {
 
         {/* Right Column: Execution Terminal & Progress */}
         <div className="lg:col-span-2 space-y-6">
-          <Card className="bg-[#09090b] border-white/10 h-full flex flex-col overflow-hidden">
-            <CardHeader className="bg-white/[0.02] border-b border-white/5 pb-4">
+          <Card className="bg-card border-border h-full flex flex-col overflow-hidden">
+            <CardHeader className="bg-secondary/50 border-b border-border/50 pb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Terminal className="w-5 h-5 text-muted-foreground" />
@@ -268,11 +268,11 @@ export default function ModelTrainingPage() {
                     <div className="flex-1 max-w-[150px]">
                       <Progress 
                         value={progress} 
-                        className="h-2 bg-black/50 border border-white/10" 
+                        className="h-2 bg-secondary/50 border border-border" 
                         indicatorClassName={trainingState === "completed" ? "bg-success" : "bg-primary"}
                       />
                     </div>
-                    <div className="text-sm font-mono font-bold text-white w-10 text-right">{progress}%</div>
+                    <div className="text-sm font-mono font-bold text-foreground w-10 text-right">{progress}%</div>
                   </div>
                 )}
               </div>

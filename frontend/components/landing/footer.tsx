@@ -9,7 +9,7 @@ export function Footer({ className }: React.HTMLAttributes<HTMLDivElement>) {
       <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="flex items-center gap-2 font-bold text-lg tracking-wide">
           <div className="bg-primary p-1.5 rounded-lg">
-            <Database className="w-4 h-4 text-white" />
+            <Database className="w-4 h-4 text-foreground" />
           </div>
           AutoML Studio
         </div>

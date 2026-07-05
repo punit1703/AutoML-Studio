@@ -54,8 +54,8 @@ export default function VisualizationPage() {
   };
 
   const renderChartBox = (title: string, desc: string, icon: React.ReactNode, type: string) => (
-    <Card className="bg-white/5 border-white/10 overflow-hidden">
-      <CardHeader className="border-b border-white/5 pb-4">
+    <Card className="bg-secondary border-border overflow-hidden">
+      <CardHeader className="border-b border-border/50 pb-4">
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -96,7 +96,7 @@ export default function VisualizationPage() {
         className="flex flex-col md:flex-row md:items-center justify-between gap-4"
       >
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">
               <PieChartIcon className="w-6 h-6 text-primary" />
             </div>

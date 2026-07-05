@@ -6,7 +6,7 @@ import { Search, Home, ChevronRight } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-card flex items-center justify-center p-4">
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -26,7 +26,7 @@ export default function NotFound() {
         </div>
         
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-white flex items-center justify-center gap-3">
+          <h2 className="text-2xl font-bold text-foreground flex items-center justify-center gap-3">
             <Search className="w-6 h-6 text-primary" />
             Page Not Found
           </h2>
@@ -43,7 +43,7 @@ export default function NotFound() {
         >
           <Link 
             href="/studio/dashboard"
-            className="inline-flex items-center justify-center w-full px-6 py-3 text-sm font-medium text-black bg-white rounded-lg hover:bg-primary hover:text-white transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] group"
+            className="inline-flex items-center justify-center w-full px-6 py-3 text-sm font-medium text-background bg-white rounded-lg hover:bg-primary hover:text-foreground transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] group"
           >
             <Home className="w-4 h-4 mr-2" />
             Return to Dashboard

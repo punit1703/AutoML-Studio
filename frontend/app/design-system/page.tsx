@@ -159,7 +159,7 @@ export default function DesignSystemPreview() {
                       <p className="text-sm">Your model achieved an accuracy of 94.2% on the validation set.</p>
                     </CardContent>
                     <CardFooter>
-                      <Button className="bg-success hover:bg-success/90 text-white">Deploy Model</Button>
+                      <Button className="bg-success hover:bg-success/90 text-foreground">Deploy Model</Button>
                     </CardFooter>
                   </Card>
                 </motion.div>

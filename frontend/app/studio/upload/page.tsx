@@ -116,7 +116,7 @@ export default function DatasetUploadPage() {
         {projectId ? (
           <div className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-white">Adding to Existing Project</p>
+              <p className="text-sm font-medium text-foreground">Adding to Existing Project</p>
               <p className="text-xs text-muted-foreground mt-1">
                 You are currently adding a dataset to your active workspace. If you meant to start a new project for this data, click here:
               </p>
@@ -126,7 +126,7 @@ export default function DatasetUploadPage() {
                 setProjectId(null);
                 setDatasetId(null);
               }}
-              className="shrink-0 text-xs px-4 py-2 bg-primary text-black rounded hover:bg-primary/90 font-bold shadow-[0_0_10px_rgba(56,189,248,0.3)] transition-all"
+              className="shrink-0 text-xs px-4 py-2 bg-primary text-background rounded hover:bg-primary/90 font-bold shadow-[0_0_10px_rgba(56,189,248,0.3)] transition-all"
             >
               Start New Project
             </button>
@@ -154,7 +154,7 @@ export default function DatasetUploadPage() {
               className={`relative overflow-hidden rounded-2xl border-2 border-dashed transition-all duration-300 flex flex-col items-center justify-center p-12 min-h-[400px] ${
                 uploadState === "dragging" 
                   ? "border-primary bg-primary/5 scale-[1.02]" 
-                  : "border-white/20 bg-[#09090b] hover:border-white/40 hover:bg-[#0c0c0e]"
+                  : "border-border bg-card hover:border-primary/40 hover:bg-muted"
               }`}
             >
               {/* Animated Background for Dragging */}
@@ -171,10 +171,10 @@ export default function DatasetUploadPage() {
 
               {uploadState === "idle" || uploadState === "dragging" ? (
                 <div className="relative z-10 flex flex-col items-center text-center">
-                  <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6 shadow-inner">
+                  <div className="w-16 h-16 rounded-full bg-secondary border border-border flex items-center justify-center mb-6 shadow-inner">
                     <UploadCloud className={`w-8 h-8 ${uploadState === "dragging" ? "text-primary animate-bounce" : "text-muted-foreground"}`} />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">Drag & drop your dataset here</h3>
+                  <h3 className="text-xl font-bold text-foreground mb-2">Drag & drop your dataset here</h3>
                   <p className="text-muted-foreground mb-8 max-w-sm">
                     Supports CSV, JSON, and Parquet files up to 5GB.
                   </p>
@@ -186,7 +186,7 @@ export default function DatasetUploadPage() {
                       onChange={handleFileSelect}
                       accept=".csv,.json,.parquet"
                     />
-                    <button className="inline-flex items-center justify-center h-10 px-6 rounded-md bg-white text-black font-semibold text-sm hover:bg-white/90 transition-all shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                    <button className="inline-flex items-center justify-center h-10 px-6 rounded-md bg-foreground text-background font-semibold text-sm hover:opacity-90 transition-all shadow-[0_0_15px_rgba(255,255,255,0.2)]">
                       Browse Files
                     </button>
                   </div>
@@ -213,14 +213,14 @@ export default function DatasetUploadPage() {
                     )}
                   </AnimatePresence>
 
-                  <h3 className="text-xl font-bold text-white mb-2 font-mono">
+                  <h3 className="text-xl font-bold text-foreground mb-2 font-mono">
                     {uploadState === "uploading" ? "Uploading Dataset..." : "Upload Complete"}
                   </h3>
                   <p className="text-muted-foreground mb-8 font-mono text-sm">
                     {fileDetails?.name} <span className="opacity-50">({fileDetails?.size})</span>
                   </p>
                   
-                  <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                     <motion.div 
                       className={`h-full rounded-full ${uploadState === "success" ? "bg-success" : "bg-primary"}`}
                       initial={{ width: 0 }}
@@ -249,14 +249,14 @@ export default function DatasetUploadPage() {
             className="space-y-6"
           >
             {/* File Info Header */}
-            <Card className="bg-[#09090b] border-white/10">
+            <Card className="bg-card border-border">
               <CardContent className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
                     <TableIcon className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-white font-mono">{fileDetails?.name || "dataset.csv"}</h2>
+                    <h2 className="text-lg font-bold text-foreground font-mono">{fileDetails?.name || "dataset.csv"}</h2>
                     <div className="flex items-center gap-3 text-sm text-muted-foreground font-mono mt-1">
                       <span>{fileDetails?.size || "2.4 MB"}</span>
                       <span className="w-1 h-1 rounded-full bg-white/20" />
@@ -265,12 +265,12 @@ export default function DatasetUploadPage() {
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <button onClick={resetUpload} className="px-4 py-2 rounded-md bg-white/5 border border-white/10 text-sm font-medium hover:bg-white/10 transition-colors">
+                  <button onClick={resetUpload} className="px-4 py-2 rounded-md bg-secondary border border-border text-sm font-medium hover:bg-muted transition-colors">
                     Upload Different File
                   </button>
                   <button 
                     onClick={() => router.push("/studio/analysis")}
-                    className="px-4 py-2 rounded-md bg-primary text-black font-semibold text-sm hover:bg-primary/90 transition-all shadow-[0_0_15px_rgba(56,189,248,0.3)] flex items-center gap-2"
+                    className="px-4 py-2 rounded-md bg-primary text-background font-semibold text-sm hover:bg-primary/90 transition-all shadow-[0_0_15px_rgba(56,189,248,0.3)] flex items-center gap-2"
                   >
                     Start Analysis <Play className="w-4 h-4" />
                   </button>
@@ -279,26 +279,26 @@ export default function DatasetUploadPage() {
             </Card>
 
             {/* Data Preview Table */}
-            <Card className="bg-[#09090b] border-white/10 overflow-hidden">
-              <CardHeader className="border-b border-white/10 bg-white/[0.02]">
+            <Card className="bg-card border-border overflow-hidden">
+              <CardHeader className="border-b border-border bg-secondary/50">
                 <CardTitle className="text-base flex items-center gap-2">
-                  Data Preview <span className="text-xs font-normal text-muted-foreground px-2 py-0.5 rounded bg-white/5 border border-white/10">First 5 rows</span>
+                  Data Preview <span className="text-xs font-normal text-muted-foreground px-2 py-0.5 rounded bg-muted border border-border">First 5 rows</span>
                 </CardTitle>
               </CardHeader>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-muted-foreground uppercase bg-white/[0.02] border-b border-white/10 font-mono">
+                  <thead className="text-xs text-muted-foreground uppercase bg-secondary/50 border-b border-border font-mono">
                     <tr>
                       {previewColumns.map((col, i) => (
                         <th key={i} className="px-6 py-3 font-medium">{col}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5 font-mono text-muted-foreground">
+                  <tbody className="divide-y divide-border font-mono text-muted-foreground">
                     {previewData.map((row, i) => (
-                      <tr key={i} className="hover:bg-white/[0.02] transition-colors">
+                      <tr key={i} className="hover:bg-muted transition-colors">
                         {previewColumns.map((col, j) => (
-                          <td key={j} className="px-6 py-4 text-white">
+                          <td key={j} className="px-6 py-4 text-foreground">
                             {row[col] !== null ? String(row[col]) : "null"}
                           </td>
                         ))}

@@ -145,7 +145,7 @@ export default function DataPreprocessingPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">
               <Wand2 className="w-6 h-6 text-primary" />
             </div>
@@ -156,7 +156,7 @@ export default function DataPreprocessingPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="border-white/10 text-white hover:bg-white/10" onClick={() => router.back()}>
+          <Button variant="outline" className="border-border text-foreground hover:bg-white/10" onClick={() => router.back()}>
             Back
           </Button>
           <Button 
@@ -189,7 +189,7 @@ export default function DataPreprocessingPage() {
               <CardContent className="p-6 relative z-10">
                 <div className="flex justify-between items-end mb-4">
                   <div>
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                       {processStatus === "completed" ? (
                         <span className="text-success flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> Pipeline Executed Successfully</span>
                       ) : (
@@ -198,11 +198,11 @@ export default function DataPreprocessingPage() {
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1 font-mono">{currentAction}</p>
                   </div>
-                  <div className="text-2xl font-mono font-bold text-white">{progress}%</div>
+                  <div className="text-2xl font-mono font-bold text-foreground">{progress}%</div>
                 </div>
                 <Progress 
                   value={progress} 
-                  className="h-3 bg-black/50 border border-white/5" 
+                  className="h-3 bg-secondary/50 border border-border/50" 
                   indicatorClassName={processStatus === "completed" ? "bg-success" : "bg-primary shadow-[0_0_10px_rgba(56,189,248,0.5)]"} 
                 />
                 
@@ -211,7 +211,7 @@ export default function DataPreprocessingPage() {
                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} 
                     className="mt-6 flex justify-end"
                   >
-                    <Button onClick={() => router.push("/studio/training")} className="bg-success text-black hover:bg-success/90 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+                    <Button onClick={() => router.push("/studio/training")} className="bg-success text-background hover:bg-success/90 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
                       Continue to Training <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                   </motion.div>
@@ -224,11 +224,11 @@ export default function DataPreprocessingPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Missing Values Card */}
-        <Card className={`border-white/10 transition-colors ${steps.missingValues.enabled ? 'bg-white/[0.03]' : 'bg-black/40 opacity-70'}`}>
+        <Card className={`border-border transition-colors ${steps.missingValues.enabled ? 'bg-white/[0.03]' : 'bg-secondary/80 opacity-70'}`}>
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${steps.missingValues.enabled ? 'bg-amber-500/10 text-amber-500' : 'bg-white/5 text-muted-foreground'}`}>
+                <div className={`p-2 rounded-lg ${steps.missingValues.enabled ? 'bg-amber-500/10 text-amber-500' : 'bg-secondary text-muted-foreground'}`}>
                   <FileWarning className="w-5 h-5" />
                 </div>
                 <div>
@@ -249,7 +249,7 @@ export default function DataPreprocessingPage() {
                       <select 
                         value={steps.missingValues.strategy}
                         onChange={(e) => handleChange('missingValues', e.target.value)}
-                        className="w-full bg-black/50 border border-white/10 rounded-md text-sm p-2.5 text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                        className="w-full bg-secondary/50 border border-border rounded-md text-sm p-2.5 text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                       >
                         <option value="impute_mean_mode">Impute Mean/Mode (Recommended)</option>
                         <option value="impute_median">Impute Median</option>
@@ -266,11 +266,11 @@ export default function DataPreprocessingPage() {
         </Card>
 
         {/* Encoding Card */}
-        <Card className={`border-white/10 transition-colors ${steps.encoding.enabled ? 'bg-white/[0.03]' : 'bg-black/40 opacity-70'}`}>
+        <Card className={`border-border transition-colors ${steps.encoding.enabled ? 'bg-white/[0.03]' : 'bg-secondary/80 opacity-70'}`}>
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${steps.encoding.enabled ? 'bg-purple-500/10 text-purple-500' : 'bg-white/5 text-muted-foreground'}`}>
+                <div className={`p-2 rounded-lg ${steps.encoding.enabled ? 'bg-purple-500/10 text-purple-500' : 'bg-secondary text-muted-foreground'}`}>
                   <Binary className="w-5 h-5" />
                 </div>
                 <div>
@@ -291,7 +291,7 @@ export default function DataPreprocessingPage() {
                       <select 
                         value={steps.encoding.strategy}
                         onChange={(e) => handleChange('encoding', e.target.value)}
-                        className="w-full bg-black/50 border border-white/10 rounded-md text-sm p-2.5 text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                        className="w-full bg-secondary/50 border border-border rounded-md text-sm p-2.5 text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                       >
                         <option value="one_hot">One-Hot Encoding (Best for nominal)</option>
                         <option value="label">Label Encoding (Best for ordinal)</option>
@@ -307,11 +307,11 @@ export default function DataPreprocessingPage() {
         </Card>
 
         {/* Scaling Card */}
-        <Card className={`border-white/10 transition-colors ${steps.scaling.enabled ? 'bg-white/[0.03]' : 'bg-black/40 opacity-70'}`}>
+        <Card className={`border-border transition-colors ${steps.scaling.enabled ? 'bg-white/[0.03]' : 'bg-secondary/80 opacity-70'}`}>
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${steps.scaling.enabled ? 'bg-blue-500/10 text-blue-500' : 'bg-white/5 text-muted-foreground'}`}>
+                <div className={`p-2 rounded-lg ${steps.scaling.enabled ? 'bg-blue-500/10 text-blue-500' : 'bg-secondary text-muted-foreground'}`}>
                   <Maximize className="w-5 h-5" />
                 </div>
                 <div>
@@ -332,7 +332,7 @@ export default function DataPreprocessingPage() {
                       <select 
                         value={steps.scaling.strategy}
                         onChange={(e) => handleChange('scaling', e.target.value)}
-                        className="w-full bg-black/50 border border-white/10 rounded-md text-sm p-2.5 text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                        className="w-full bg-secondary/50 border border-border rounded-md text-sm p-2.5 text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                       >
                         <option value="standard">Standard Scaler (Z-Score)</option>
                         <option value="minmax">Min-Max Scaler (0 to 1)</option>
@@ -348,11 +348,11 @@ export default function DataPreprocessingPage() {
         </Card>
 
         {/* Outliers Card */}
-        <Card className={`border-white/10 transition-colors ${steps.outliers.enabled ? 'bg-white/[0.03]' : 'bg-black/40 opacity-70'}`}>
+        <Card className={`border-border transition-colors ${steps.outliers.enabled ? 'bg-white/[0.03]' : 'bg-secondary/80 opacity-70'}`}>
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${steps.outliers.enabled ? 'bg-rose-500/10 text-rose-500' : 'bg-white/5 text-muted-foreground'}`}>
+                <div className={`p-2 rounded-lg ${steps.outliers.enabled ? 'bg-rose-500/10 text-rose-500' : 'bg-secondary text-muted-foreground'}`}>
                   <AlertTriangle className="w-5 h-5" />
                 </div>
                 <div>
@@ -373,7 +373,7 @@ export default function DataPreprocessingPage() {
                       <select 
                         value={steps.outliers.strategy}
                         onChange={(e) => handleChange('outliers', e.target.value)}
-                        className="w-full bg-black/50 border border-white/10 rounded-md text-sm p-2.5 text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                        className="w-full bg-secondary/50 border border-border rounded-md text-sm p-2.5 text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                       >
                         <option value="clip">Clip (Winsorize to 5th/95th percentile)</option>
                         <option value="drop">Drop Outlier Rows</option>
