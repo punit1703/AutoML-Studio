@@ -18,17 +18,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [projectId, setProjectIdState] = useState<string | null>(null);
   const [datasetId, setDatasetIdState] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Load from local storage on mount
-    const savedToken = localStorage.getItem('access_token');
-    const savedProjectId = localStorage.getItem('project_id');
-    const savedDatasetId = localStorage.getItem('dataset_id');
-
-    if (savedToken) setTokenState(savedToken);
-    if (savedProjectId) setProjectId(savedProjectId);
-    if (savedDatasetId) setDatasetId(savedDatasetId);
-  }, []);
-
   const setToken = (newToken: string | null) => {
     setTokenState(newToken);
     if (newToken) {
@@ -49,6 +38,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (id) localStorage.setItem('dataset_id', id);
     else localStorage.removeItem('dataset_id');
   };
+
+  useEffect(() => {
+    // Load from local storage on mount
+    const savedToken = localStorage.getItem('access_token');
+    const savedProjectId = localStorage.getItem('project_id');
+    const savedDatasetId = localStorage.getItem('dataset_id');
+
+    if (savedToken) setTokenState(savedToken);
+    if (savedProjectId) setProjectIdState(savedProjectId);
+    if (savedDatasetId) setDatasetIdState(savedDatasetId);
+  }, []);
 
   return (
     <AppContext.Provider value={{ token, setToken, projectId, setProjectId, datasetId, setDatasetId }}>

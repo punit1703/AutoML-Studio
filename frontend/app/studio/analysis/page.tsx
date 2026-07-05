@@ -140,13 +140,8 @@ export default function DatasetAnalysisPage() {
                   <BarChart3 className="w-5 h-5 text-primary" />
                   Feature Distribution
                 </CardTitle>
-                <CardDescription>Age distribution across the dataset</CardDescription>
+                <CardDescription>Overall distribution view</CardDescription>
               </div>
-              <select className="bg-secondary/50 border border-border rounded-md text-sm p-1.5 text-foreground outline-none focus:ring-1 focus:ring-primary">
-                <option>Age</option>
-                <option>Income</option>
-                <option>Credit_Score</option>
-              </select>
             </div>
           </CardHeader>
           <CardContent>
