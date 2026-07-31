@@ -94,7 +94,7 @@ export function StudioTopNavbar() {
                 className="bg-transparent border border-border text-xs font-mono text-muted-foreground outline-none cursor-pointer rounded px-2 py-1 hover:text-foreground hover:border-muted-foreground/50 transition-colors max-w-[200px]"
               >
                 {datasets.map(d => (
-                  <option key={d.id} value={d.id} className="bg-background">
+                  <option key={d.id} value={d.id} className="bg-background text-foreground">
                     {d.file_name}
                   </option>
                 ))}

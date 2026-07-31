@@ -149,15 +149,15 @@ export default function ModelTrainingPage() {
           </p>
         </div>
           <div className="flex flex-col sm:flex-row items-center gap-3">
-            <select 
-              value={targetColumn} 
-              onChange={e => setTargetColumn(e.target.value)}
-              disabled={trainingState !== "idle"}
-              className="bg-secondary/50 border border-border rounded-md text-sm p-2 text-foreground outline-none focus:ring-1 focus:ring-primary h-10 w-48"
-            >
-              <option value="" disabled>Select Target Column</option>
-              {columns.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+            {targetColumn ? (
+              <div className="bg-secondary/50 border border-border rounded-md px-4 h-10 flex items-center justify-center text-sm font-medium text-primary shadow-inner">
+                🎯 Auto-Target: <span className="ml-2 text-foreground">{targetColumn}</span>
+              </div>
+            ) : (
+              <div className="bg-secondary/50 border border-border rounded-md px-4 h-10 flex items-center justify-center text-sm font-medium text-muted-foreground shadow-inner">
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Detecting target...
+              </div>
+            )}
 
             {trainingState === "running" ? (
               <Button onClick={stopTraining} variant="destructive" className="shadow-[0_0_15px_rgba(239,68,68,0.4)]">

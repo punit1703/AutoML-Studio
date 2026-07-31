@@ -21,55 +21,16 @@ import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAppContext } from "@/context/AppContext";
 
-// Custom Toggle Switch Component
-const Switch = ({ checked, onChange }: { checked: boolean; onChange: (checked: boolean) => void }) => (
-  <button
-    type="button"
-    role="switch"
-    aria-checked={checked}
-    onClick={() => onChange(!checked)}
-    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#09090b] ${
-      checked ? "bg-primary shadow-[0_0_10px_rgba(56,189,248,0.5)]" : "bg-white/20 hover:bg-white/30"
-    }`}
-  >
-    <span
-      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-        checked ? "translate-x-5" : "translate-x-1"
-      }`}
-    />
-  </button>
-);
+
 
 export default function DataPreprocessingPage() {
   const router = useRouter();
   const { datasetId } = useAppContext();
   
-  // Preprocessing State
-  const [steps, setSteps] = useState({
-    missingValues: { enabled: true, strategy: "impute_mean_mode" },
-    encoding: { enabled: true, strategy: "one_hot" },
-    scaling: { enabled: false, strategy: "standard" },
-    outliers: { enabled: false, strategy: "clip" },
-  });
-
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [processStatus, setProcessStatus] = useState<"idle" | "running" | "completed">("idle");
   const [currentAction, setCurrentAction] = useState("");
-
-  const handleToggle = (step: keyof typeof steps) => {
-    setSteps(prev => ({
-      ...prev,
-      [step]: { ...prev[step], enabled: !prev[step].enabled }
-    }));
-  };
-
-  const handleChange = (step: keyof typeof steps, value: string) => {
-    setSteps(prev => ({
-      ...prev,
-      [step]: { ...prev[step], strategy: value }
-    }));
-  };
 
   const startProcessing = async () => {
     if (!datasetId) {
@@ -83,36 +44,12 @@ export default function DataPreprocessingPage() {
     setCurrentAction("Initializing preprocessing engine...");
     
     try {
-      const config: any = {};
-      
-      if (steps.missingValues.enabled) {
-        let strategy = 'mean';
-        if (steps.missingValues.strategy === 'impute_median') strategy = 'median';
-        if (steps.missingValues.strategy === 'impute_constant') strategy = 'constant';
-        if (steps.missingValues.strategy === 'drop_rows') strategy = 'drop';
-        config.missing_values = { strategy, fill_value: 0 };
-      }
-      
-      if (steps.encoding.enabled) {
-        if (steps.encoding.strategy === 'one_hot' || steps.encoding.strategy === 'auto') {
-          config.encode_one_hot = {};
-        } else {
-          config.encode_labels = {};
-        }
-      }
-      
-      if (steps.scaling.enabled) {
-        let method = 'standard';
-        if (steps.scaling.strategy === 'minmax') method = 'min_max';
-        if (steps.scaling.strategy === 'robust') method = 'robust';
-        config.scale = { method };
-      }
-      
-      if (steps.outliers.enabled) {
-        let action = 'clip';
-        if (steps.outliers.strategy === 'drop') action = 'drop';
-        config.outliers = { action, method: 'iqr' };
-      }
+      const config: any = {
+        missing_values: { strategy: 'mean', fill_value: 0 },
+        encode_one_hot: {},
+        scale: { method: 'standard' },
+        outliers: { action: 'clip', method: 'iqr' }
+      };
       
       // Simulate progress bar while waiting for the real backend API to finish
       let p = 0;
@@ -152,7 +89,7 @@ export default function DataPreprocessingPage() {
             Data Preprocessing
           </h1>
           <p className="text-muted-foreground mt-2 max-w-2xl">
-            Configure how the ML engine should clean and transform your dataset before training. Toggle steps and adjust strategies as needed.
+            The ML engine will automatically clean and transform your dataset using optimal strategies before training.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -224,168 +161,75 @@ export default function DataPreprocessingPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Missing Values Card */}
-        <Card className={`border-border transition-colors ${steps.missingValues.enabled ? 'bg-white/[0.03]' : 'bg-secondary/80 opacity-70'}`}>
+        <Card className="border-border transition-colors bg-white/[0.03]">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${steps.missingValues.enabled ? 'bg-amber-500/10 text-amber-500' : 'bg-secondary text-muted-foreground'}`}>
+                <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500">
                   <FileWarning className="w-5 h-5" />
                 </div>
                 <div>
                   <CardTitle className="text-lg">Missing Values</CardTitle>
-                  <CardDescription>Handle null or empty cells</CardDescription>
+                  <CardDescription>Handled automatically (Impute Mean/Mode)</CardDescription>
                 </div>
               </div>
-              <Switch checked={steps.missingValues.enabled} onChange={() => handleToggle('missingValues')} />
+              <CheckCircle2 className="w-5 h-5 text-success" />
             </div>
           </CardHeader>
-          <AnimatePresence>
-            {steps.missingValues.enabled && (
-              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                <CardContent>
-                  <div className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Imputation Strategy</label>
-                      <select 
-                        value={steps.missingValues.strategy}
-                        onChange={(e) => handleChange('missingValues', e.target.value)}
-                        className="w-full bg-secondary/50 border border-border rounded-md text-sm p-2.5 text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                      >
-                        <option value="impute_mean_mode">Impute Mean/Mode (Recommended)</option>
-                        <option value="impute_median">Impute Median</option>
-                        <option value="impute_constant">Impute Constant (0 / 'Unknown')</option>
-                        <option value="drop_rows">Drop Rows with Missing Values</option>
-                        <option value="drop_cols">Drop Columns (&gt;50% missing)</option>
-                      </select>
-                    </div>
-                  </div>
-                </CardContent>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </Card>
 
         {/* Encoding Card */}
-        <Card className={`border-border transition-colors ${steps.encoding.enabled ? 'bg-white/[0.03]' : 'bg-secondary/80 opacity-70'}`}>
+        <Card className="border-border transition-colors bg-white/[0.03]">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${steps.encoding.enabled ? 'bg-purple-500/10 text-purple-500' : 'bg-secondary text-muted-foreground'}`}>
+                <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500">
                   <Binary className="w-5 h-5" />
                 </div>
                 <div>
                   <CardTitle className="text-lg">Categorical Encoding</CardTitle>
-                  <CardDescription>Convert text categories to numbers</CardDescription>
+                  <CardDescription>Handled automatically (One-Hot Encoding)</CardDescription>
                 </div>
               </div>
-              <Switch checked={steps.encoding.enabled} onChange={() => handleToggle('encoding')} />
+              <CheckCircle2 className="w-5 h-5 text-success" />
             </div>
           </CardHeader>
-          <AnimatePresence>
-            {steps.encoding.enabled && (
-              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                <CardContent>
-                  <div className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Encoding Strategy</label>
-                      <select 
-                        value={steps.encoding.strategy}
-                        onChange={(e) => handleChange('encoding', e.target.value)}
-                        className="w-full bg-secondary/50 border border-border rounded-md text-sm p-2.5 text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                      >
-                        <option value="one_hot">One-Hot Encoding (Best for nominal)</option>
-                        <option value="label">Label Encoding (Best for ordinal)</option>
-                        <option value="target">Target Encoding</option>
-                        <option value="auto">Auto-select based on cardinality</option>
-                      </select>
-                    </div>
-                  </div>
-                </CardContent>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </Card>
 
         {/* Scaling Card */}
-        <Card className={`border-border transition-colors ${steps.scaling.enabled ? 'bg-white/[0.03]' : 'bg-secondary/80 opacity-70'}`}>
+        <Card className="border-border transition-colors bg-white/[0.03]">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${steps.scaling.enabled ? 'bg-blue-500/10 text-blue-500' : 'bg-secondary text-muted-foreground'}`}>
+                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
                   <Maximize className="w-5 h-5" />
                 </div>
                 <div>
                   <CardTitle className="text-lg">Feature Scaling</CardTitle>
-                  <CardDescription>Normalize numerical ranges</CardDescription>
+                  <CardDescription>Handled automatically (Standard Scaler)</CardDescription>
                 </div>
               </div>
-              <Switch checked={steps.scaling.enabled} onChange={() => handleToggle('scaling')} />
+              <CheckCircle2 className="w-5 h-5 text-success" />
             </div>
           </CardHeader>
-          <AnimatePresence>
-            {steps.scaling.enabled && (
-              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                <CardContent>
-                  <div className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Scaling Method</label>
-                      <select 
-                        value={steps.scaling.strategy}
-                        onChange={(e) => handleChange('scaling', e.target.value)}
-                        className="w-full bg-secondary/50 border border-border rounded-md text-sm p-2.5 text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                      >
-                        <option value="standard">Standard Scaler (Z-Score)</option>
-                        <option value="minmax">Min-Max Scaler (0 to 1)</option>
-                        <option value="robust">Robust Scaler (Outlier resistant)</option>
-                        <option value="maxabs">Max-Abs Scaler</option>
-                      </select>
-                    </div>
-                  </div>
-                </CardContent>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </Card>
 
         {/* Outliers Card */}
-        <Card className={`border-border transition-colors ${steps.outliers.enabled ? 'bg-white/[0.03]' : 'bg-secondary/80 opacity-70'}`}>
+        <Card className="border-border transition-colors bg-white/[0.03]">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${steps.outliers.enabled ? 'bg-rose-500/10 text-rose-500' : 'bg-secondary text-muted-foreground'}`}>
+                <div className="p-2 rounded-lg bg-rose-500/10 text-rose-500">
                   <AlertTriangle className="w-5 h-5" />
                 </div>
                 <div>
                   <CardTitle className="text-lg">Handle Outliers</CardTitle>
-                  <CardDescription>Manage extreme numerical anomalies</CardDescription>
+                  <CardDescription>Handled automatically (Clip Extreme Anomalies)</CardDescription>
                 </div>
               </div>
-              <Switch checked={steps.outliers.enabled} onChange={() => handleToggle('outliers')} />
+              <CheckCircle2 className="w-5 h-5 text-success" />
             </div>
           </CardHeader>
-          <AnimatePresence>
-            {steps.outliers.enabled && (
-              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                <CardContent>
-                  <div className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Outlier Strategy</label>
-                      <select 
-                        value={steps.outliers.strategy}
-                        onChange={(e) => handleChange('outliers', e.target.value)}
-                        className="w-full bg-secondary/50 border border-border rounded-md text-sm p-2.5 text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                      >
-                        <option value="clip">Clip (Winsorize to 5th/95th percentile)</option>
-                        <option value="drop">Drop Outlier Rows</option>
-                        <option value="impute">Impute with Median</option>
-                        <option value="ignore">Ignore</option>
-                      </select>
-                    </div>
-                  </div>
-                </CardContent>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </Card>
       </div>
     </div>

@@ -91,19 +91,19 @@ class ModelTrainingEngine:
     def _get_regression_models(self, data_size):
         from sklearn.pipeline import Pipeline
         from sklearn.preprocessing import StandardScaler
-        from sklearn.feature_selection import SelectKBest, f_regression
+        from sklearn.feature_selection import SelectKBest, f_regression, VarianceThreshold
 
         k_options = [10, 20, 50, 'all']
 
         models = {}
         
         models['Linear Regression'] = (
-            Pipeline([('scaler', StandardScaler()), ('selector', SelectKBest(score_func=f_regression)), ('model', LinearRegression())]),
+            Pipeline([('scaler', StandardScaler()), ('variance', VarianceThreshold()), ('selector', SelectKBest(score_func=f_regression)), ('model', LinearRegression())]),
             {'selector__k': k_options}
         )
         
         models['Random Forest'] = (
-            Pipeline([('scaler', StandardScaler()), ('selector', SelectKBest(score_func=f_regression)), ('model', RandomForestRegressor(random_state=42))]),
+            Pipeline([('scaler', StandardScaler()), ('variance', VarianceThreshold()), ('selector', SelectKBest(score_func=f_regression)), ('model', RandomForestRegressor(random_state=42))]),
             {
                 'selector__k': k_options,
                 'model__n_estimators': [50, 100, 200],
@@ -113,7 +113,7 @@ class ModelTrainingEngine:
         )
         
         models['Gradient Boosting'] = (
-            Pipeline([('scaler', StandardScaler()), ('selector', SelectKBest(score_func=f_regression)), ('model', GradientBoostingRegressor(random_state=42))]),
+            Pipeline([('scaler', StandardScaler()), ('variance', VarianceThreshold()), ('selector', SelectKBest(score_func=f_regression)), ('model', GradientBoostingRegressor(random_state=42))]),
             {
                 'selector__k': k_options,
                 'model__n_estimators': [50, 100, 200],
@@ -124,7 +124,7 @@ class ModelTrainingEngine:
         
         if LGB_AVAILABLE:
             models['LightGBM'] = (
-                Pipeline([('scaler', StandardScaler()), ('selector', SelectKBest(score_func=f_regression)), ('model', lgb.LGBMRegressor(random_state=42, verbose=-1))]),
+                Pipeline([('scaler', StandardScaler()), ('variance', VarianceThreshold()), ('selector', SelectKBest(score_func=f_regression)), ('model', lgb.LGBMRegressor(random_state=42, verbose=-1))]),
                 {
                     'selector__k': k_options,
                     'model__n_estimators': [50, 100, 200],
@@ -138,7 +138,7 @@ class ModelTrainingEngine:
     def _get_classification_models(self, data_size):
         from sklearn.pipeline import Pipeline
         from sklearn.preprocessing import StandardScaler
-        from sklearn.feature_selection import SelectKBest, f_classif
+        from sklearn.feature_selection import SelectKBest, f_classif, VarianceThreshold
         import warnings
         
         k_options = [10, 20, 50, 'all']
@@ -146,7 +146,7 @@ class ModelTrainingEngine:
         models = {}
         
         models['Logistic Regression'] = (
-            Pipeline([('scaler', StandardScaler()), ('selector', SelectKBest(score_func=f_classif)), ('model', LogisticRegression(max_iter=500, random_state=42))]),
+            Pipeline([('scaler', StandardScaler()), ('variance', VarianceThreshold()), ('selector', SelectKBest(score_func=f_classif)), ('model', LogisticRegression(max_iter=500, random_state=42))]),
             {
                 'selector__k': k_options,
                 'model__C': [0.1, 1.0, 10.0],
@@ -155,7 +155,7 @@ class ModelTrainingEngine:
         )
         
         models['Random Forest'] = (
-            Pipeline([('scaler', StandardScaler()), ('selector', SelectKBest(score_func=f_classif)), ('model', RandomForestClassifier(random_state=42))]),
+            Pipeline([('scaler', StandardScaler()), ('variance', VarianceThreshold()), ('selector', SelectKBest(score_func=f_classif)), ('model', RandomForestClassifier(random_state=42))]),
             {
                 'selector__k': k_options,
                 'model__n_estimators': [50, 100, 200],
@@ -166,7 +166,7 @@ class ModelTrainingEngine:
         
         if LGB_AVAILABLE:
             models['LightGBM'] = (
-                Pipeline([('scaler', StandardScaler()), ('selector', SelectKBest(score_func=f_classif)), ('model', lgb.LGBMClassifier(random_state=42, verbose=-1))]),
+                Pipeline([('scaler', StandardScaler()), ('variance', VarianceThreshold()), ('selector', SelectKBest(score_func=f_classif)), ('model', lgb.LGBMClassifier(random_state=42, verbose=-1))]),
                 {
                     'selector__k': k_options,
                     'model__n_estimators': [50, 100, 200],
@@ -195,9 +195,7 @@ class ModelTrainingEngine:
         
         # Iterative optimization attempts: 
         # Attempt 1: 5 combos (Fast)
-        # Attempt 2: 15 combos (Moderate)
-        # Attempt 3: 30 combos (Exhaustive)
-        search_budgets = [5, 15, 30] 
+        search_budgets = [5]  
         
         for name, (base_model, param_grid) in models.items():
             start_time = time.time()
