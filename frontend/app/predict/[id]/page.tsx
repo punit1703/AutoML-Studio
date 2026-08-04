@@ -25,15 +25,24 @@ export default function PredictionAppPage() {
         const res = await api.get(`v1/deployments/${id}/`);
         setDeployment(res.data);
         
-        // Initialize form data
+        // Initialize form data using features schema if available
         const initialData: Record<string, any> = {};
         const schema = res.data.schema;
         
-        if (schema?.numeric) {
-          schema.numeric.forEach((col: string) => { initialData[col] = ""; });
-        }
-        if (schema?.categorical) {
-          schema.categorical.forEach((col: string) => { initialData[col] = ""; });
+        if (schema?.features) {
+          schema.features.forEach((feat: any) => { 
+            if (!feat.optional) {
+              initialData[feat.name] = feat.type === 'boolean' ? false : "";
+            }
+          });
+        } else {
+          // Fallback for old models
+          if (schema?.numeric) {
+            schema.numeric.forEach((col: string) => { initialData[col] = ""; });
+          }
+          if (schema?.categorical) {
+            schema.categorical.forEach((col: string) => { initialData[col] = ""; });
+          }
         }
         setFormData(initialData);
         
@@ -47,10 +56,10 @@ export default function PredictionAppPage() {
     if (id) fetchDeployment();
   }, [id]);
 
-  const handleInputChange = (col: string, value: string, isNumeric: boolean) => {
+  const handleInputChange = (col: string, value: any, type: string) => {
     setFormData(prev => ({
       ...prev,
-      [col]: isNumeric ? (value === "" ? "" : Number(value)) : value
+      [col]: type === 'numeric' ? (value === "" ? "" : Number(value)) : value
     }));
   };
 
@@ -90,6 +99,79 @@ export default function PredictionAppPage() {
   }
 
   const { schema, project } = deployment;
+  
+  // Render dynamic form fields based on the feature schema
+  const renderField = (feat: any) => {
+    // If it's a legacy schema, feat will just be a string name. Handle both:
+    const isLegacyNumeric = typeof feat === 'string' && schema.numeric?.includes(feat);
+    const isLegacyCategorical = typeof feat === 'string' && schema.categorical?.includes(feat);
+    
+    const name = typeof feat === 'string' ? feat : feat.name;
+    const type = typeof feat === 'string' ? (isLegacyNumeric ? 'numeric' : 'text') : feat.type;
+    const options = feat.options || [];
+    
+    if (feat.hidden) return null;
+
+    const label = feat.label || name;
+
+    return (
+      <div key={name}>
+        <label className="block text-sm font-medium mb-1.5 flex items-center justify-between">
+          {label}
+          {feat.optional && <span className="text-[10px] text-muted-foreground uppercase">Optional</span>}
+        </label>
+        
+        {type === 'categorical' && options.length > 0 ? (
+          <select
+            required={!feat.optional}
+            value={formData[name] || ""}
+            onChange={(e) => handleInputChange(name, e.target.value, 'categorical')}
+            className="w-full h-10 px-3 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
+          >
+            <option value="" disabled>Select an option...</option>
+            {options.map((opt: string) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        ) : type === 'boolean' ? (
+          <div className="flex items-center gap-4 h-10">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input 
+                type="radio" 
+                name={name}
+                checked={formData[name] === true}
+                onChange={() => handleInputChange(name, true, 'boolean')}
+                className="text-primary focus:ring-primary h-4 w-4"
+              />
+              <span className="text-sm">Yes</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input 
+                type="radio" 
+                name={name}
+                checked={formData[name] === false}
+                onChange={() => handleInputChange(name, false, 'boolean')}
+                className="text-primary focus:ring-primary h-4 w-4"
+              />
+              <span className="text-sm">No</span>
+            </label>
+          </div>
+        ) : (
+          <input 
+            type={type === 'numeric' ? "number" : "text"}
+            step={type === 'numeric' ? "any" : undefined}
+            min={type === 'numeric' ? feat.min : undefined}
+            max={type === 'numeric' ? feat.max : undefined}
+            required={!feat.optional}
+            value={formData[name] === undefined ? "" : formData[name]}
+            onChange={(e) => handleInputChange(name, e.target.value, type)}
+            className="w-full h-10 px-3 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
+            placeholder={type === 'numeric' && feat.min !== undefined ? `Range: ${feat.min} - ${feat.max}` : undefined}
+          />
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col relative selection:bg-primary/40">
@@ -116,46 +198,18 @@ export default function PredictionAppPage() {
 
           <form onSubmit={handlePredict} className="bg-card border border-border p-8 rounded-2xl shadow-xl space-y-6">
             
-            {schema?.numeric && schema.numeric.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 border-b border-border pb-2">Numeric Inputs</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {schema.numeric.map((col: string) => (
-                    <div key={col}>
-                      <label className="block text-sm font-medium mb-1.5">{col}</label>
-                      <input 
-                        type="number"
-                        step="any"
-                        required
-                        value={formData[col] === undefined ? "" : formData[col]}
-                        onChange={(e) => handleInputChange(col, e.target.value, true)}
-                        className="w-full h-10 px-3 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
-                      />
-                    </div>
-                  ))}
-                </div>
+            {schema?.features ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {schema.features.map(renderField)}
+              </div>
+            ) : (
+              /* Fallback for old schema */
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {schema?.numeric?.map((col: string) => renderField(col))}
+                {schema?.categorical?.map((col: string) => renderField(col))}
               </div>
             )}
 
-            {schema?.categorical && schema.categorical.length > 0 && (
-              <div className="pt-4">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 border-b border-border pb-2">Categorical Inputs</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {schema.categorical.map((col: string) => (
-                    <div key={col}>
-                      <label className="block text-sm font-medium mb-1.5">{col}</label>
-                      <input 
-                        type="text"
-                        required
-                        value={formData[col] || ""}
-                        onChange={(e) => handleInputChange(col, e.target.value, false)}
-                        className="w-full h-10 px-3 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className="pt-6 flex justify-end">
               <button 

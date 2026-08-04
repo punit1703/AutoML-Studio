@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { fadeIn } from "@/lib/animations";
-import { Terminal, Code2, Cpu } from "lucide-react";
+import { Terminal, Code2, Cpu, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 export function HeroSection({ className }: React.HTMLAttributes<HTMLDivElement>) {
@@ -50,9 +50,8 @@ export function HeroSection({ className }: React.HTMLAttributes<HTMLDivElement>)
             </motion.p>
             
             <motion.div variants={fadeIn} className="mt-10 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-              <Link href="/studio/training" className="inline-flex items-center justify-center w-full sm:w-auto text-base px-8 h-14 rounded-md bg-primary hover:bg-primary/90 text-background shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:shadow-[0_0_30px_rgba(56,189,248,0.6)] hover:-translate-y-0.5 transition-all font-mono font-semibold">
-                <Terminal className="w-4 h-4 mr-2" />
-                Start Training
+              <Link href="/studio/dashboard" className="inline-flex items-center justify-center w-full sm:w-auto text-base px-8 h-14 rounded-md bg-primary hover:bg-primary/90 text-background shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:shadow-[0_0_30px_rgba(56,189,248,0.6)] hover:-translate-y-0.5 transition-all font-mono font-semibold">
+                Get Started Free <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
               <Link href="https://github.com/punit1703/AutoML-Studio" target="_blank" className="inline-flex items-center justify-center w-full sm:w-auto text-base px-8 h-14 rounded-md border border-white/20 text-foreground hover:bg-white/10 hover:border-white/30 transition-all font-mono font-medium">
                 <Code2 className="w-4 h-4 mr-2" />

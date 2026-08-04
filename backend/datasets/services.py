@@ -103,6 +103,96 @@ class DatasetService:
         return DatasetService.extract_metadata(dataset)
 
     @staticmethod
+    def process_multiple_uploads(project, files):
+        if not files:
+            raise ValidationError("No files provided")
+            
+        datasets = []
+        for file in files:
+            file_type = DatasetService.validate_file(file)
+            dataset = Dataset.objects.create(
+                project=project,
+                file=file,
+                file_name=file.name,
+                file_type=file_type,
+                file_size=file.size
+            )
+            dataset = DatasetService.extract_metadata(dataset)
+            datasets.append(dataset)
+            
+        if len(datasets) == 1:
+            return {"status": "success", "dataset_id": str(datasets[0].id)}
+            
+        # Analyze relations
+        dfs = []
+        for ds in datasets:
+            dfs.append(read_dataframe(ds.file.path, ds.file_name))
+            
+        # Check if schemas exactly match
+        schemas_match = True
+        columns = set(dfs[0].columns)
+        for df in dfs[1:]:
+            if set(df.columns) != columns:
+                schemas_match = False
+                break
+                
+        if schemas_match:
+            # Combine them automatically!
+            combined_df = pd.DataFrame()
+            for ds, df in zip(datasets, dfs):
+                # Add label column based on filename (e.g. fake.csv -> Fake)
+                import os
+                label_val = os.path.splitext(ds.file_name)[0].capitalize()
+                # Only add if it doesn't already exist
+                if 'Dataset_Label' not in df.columns:
+                    df['Dataset_Label'] = label_val
+                combined_df = pd.concat([combined_df, df], ignore_index=True)
+                
+            # Save combined file
+            import io
+            from django.core.files.base import ContentFile
+            
+            csv_buffer = io.StringIO()
+            combined_df.to_csv(csv_buffer, index=False)
+            
+            merged_dataset = Dataset.objects.create(
+                project=project,
+                file_name="Merged_Dataset.csv",
+                file_type="CSV",
+                file_size=len(csv_buffer.getvalue().encode('utf-8'))
+            )
+            merged_dataset.file.save('Merged_Dataset.csv', ContentFile(csv_buffer.getvalue().encode('utf-8')))
+            merged_dataset = DatasetService.extract_metadata(merged_dataset)
+            
+            # Delete individual datasets
+            for ds in datasets:
+                ds.delete()
+                
+            return {
+                "status": "merged", 
+                "message": "Datasets had identical schemas and were automatically merged.",
+                "dataset_id": str(merged_dataset.id)
+            }
+        else:
+            # Schemas differ
+            common_cols = set(dfs[0].columns)
+            for df in dfs[1:]:
+                common_cols.intersection_update(set(df.columns))
+                
+            if len(common_cols) > 0:
+                recommendation = "Recommend Join"
+            else:
+                recommendation = "Recommend Separate Projects"
+                
+            return {
+                "status": "requires_action",
+                "recommendation": recommendation,
+                "dataset_ids": [str(ds.id) for ds in datasets],
+                "common_columns": list(common_cols)
+            }
+
+
+    @staticmethod
     def analyze_dataset(dataset: Dataset, target_column: str = None):
         try:
             df = read_dataframe(dataset.file.path, dataset.file_name)
@@ -116,24 +206,51 @@ class DatasetService:
         try:
             df = read_dataframe(dataset.file.path, dataset.file_name)
             suggestions = []
+            
+            # Blacklisted terms (case-insensitive)
+            id_blacklist = ['id', 'uuid', 'index', 'serial', 'timestamp', 'created', 'updated']
+            
+            # High-confidence target terms (case-insensitive)
+            target_boosts = ['attrition', 'price', 'salary', 'disease', 'fraud', 'churn', 'purchased', 'target', 'label', 'class', 'diagnosis', 'loan_status', 'default', 'fake', 'true']
+            
             for col in df.columns:
                 score = 1
                 name_lower = col.lower()
-                if any(x in name_lower for x in ['attrition', 'churn', 'price', 'salary', 'disease', 'target', 'label', 'class', 'status', 'result', 'is_']):
-                    score += 2
                 
+                # 1. Identifier & Constant Column Detection (Blacklist)
+                is_id = any(term in name_lower for term in id_blacklist) or name_lower.endswith('id')
                 nunique = df[col].nunique()
-                if nunique < 2:
-                    continue # single value, bad target
-                if nunique == len(df) and df[col].dtype == 'object':
-                    continue # ID column, bad target
                 
-                if nunique <= 10:
-                    score += 2
-                elif pd.api.types.is_numeric_dtype(df[col]):
+                if nunique < 2:
+                    continue  # Constant column, cannot be a target
+                
+                if is_id or (nunique == len(df) and df[col].dtype == 'object'):
+                    continue  # It's an ID column
+                    
+                # Date columns shouldn't be targets
+                if 'datetime' in str(df[col].dtype) or 'date' in name_lower:
+                    continue
+                
+                # 2. Semantic Boosting
+                if any(x in name_lower for x in target_boosts):
+                    score += 3
+                elif any(x in name_lower for x in ['status', 'result', 'is_', 'has_']):
                     score += 1
                 
-                suggestions.append({"column": col, "score": min(score, 5), "stars": "★" * min(score, 5)})
+                # 3. Data Distribution (Classification vs Regression viability)
+                if nunique <= 10:
+                    score += 2  # Good for classification
+                elif pd.api.types.is_numeric_dtype(df[col]):
+                    score += 1  # Good for regression
+                
+                # Cap score at 5
+                final_score = min(score, 5)
+                
+                suggestions.append({
+                    "column": col, 
+                    "score": final_score, 
+                    "stars": "★" * final_score
+                })
             
             suggestions.sort(key=lambda x: x['score'], reverse=True)
             return {"suggestions": suggestions[:10]}
@@ -207,7 +324,7 @@ class DatasetService:
                 model_name=best['name'],
                 model_path=best['absolute_path'],
                 target_column=target_column,
-                schema=best['schema']
+                schema={**best['schema'], 'label_classes': best.get('label_classes'), 'metrics': best['metrics']}
             )
             
             results['deployment_id'] = deployment.id

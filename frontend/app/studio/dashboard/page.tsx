@@ -62,7 +62,14 @@ export default function DashboardPage() {
     setProjectId(project.id);
     if (project.primary_dataset_id) {
       setDatasetId(project.primary_dataset_id);
-      router.push("/studio/analysis");
+    } else {
+      setDatasetId(null);
+    }
+    
+    if (project.latest_deployment_id) {
+      router.push("/studio/pipeline");
+    } else if (project.primary_dataset_id) {
+      router.push("/studio/pipeline");
     } else {
       router.push("/studio/upload");
     }

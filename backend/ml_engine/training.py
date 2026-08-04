@@ -248,10 +248,35 @@ class ModelTrainingEngine:
             
         relative_path = os.path.join(os.path.basename(os.path.dirname(self.model_save_dir)), os.path.basename(self.model_save_dir), model_filename).replace("\\", "/")
         
+        # Build smart feature schema for dynamic frontend forms
+        features_schema = []
+        for col in X_train.columns:
+            dtype = X_train[col].dtype
+            feat = {"name": col, "type": "text", "optional": False}
+            
+            if pd.api.types.is_numeric_dtype(dtype):
+                # Detect boolean by checking unique values
+                nunique = X_train[col].dropna().nunique()
+                unique_vals = X_train[col].dropna().unique()
+                if nunique == 2 and set(unique_vals).issubset({0, 1, 0.0, 1.0}):
+                    feat["type"] = "boolean"
+                else:
+                    feat["type"] = "numeric"
+                    feat["min"] = float(X_train[col].min())
+                    feat["max"] = float(X_train[col].max())
+            else:
+                feat["type"] = "categorical"
+                # Get unique categories from the training set, dropping NaNs
+                categories = X_train[col].dropna().unique().tolist()
+                feat["options"] = [str(cat) for cat in categories]
+                
+            features_schema.append(feat)
+        
         # Schema representing the required input for the pipeline
         schema = {
             "numeric": num_cols,
-            "categorical": cat_cols
+            "categorical": cat_cols,
+            "features": features_schema
         }
 
         return {
@@ -263,6 +288,6 @@ class ModelTrainingEngine:
                 'model_path': f"/media/{relative_path}",
                 'absolute_path': model_path,
                 'schema': schema,
-                'label_encoder': self.label_encoder
+                'label_classes': self.label_encoder.classes_.tolist() if self.label_encoder else None
             }
         }

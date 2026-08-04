@@ -39,6 +39,12 @@ class DeploymentViewSet(viewsets.ModelViewSet):
             
             predictions = model_pipeline.predict(df)
             
-            return Response({"predictions": predictions.tolist()}, status=status.HTTP_200_OK)
+            # Map predictions to string labels if this was a classification task
+            pred_list = predictions.tolist()
+            label_classes = deployment.schema.get('label_classes')
+            if label_classes:
+                pred_list = [label_classes[int(p)] for p in pred_list]
+            
+            return Response({"predictions": pred_list}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": f"Prediction failed: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)

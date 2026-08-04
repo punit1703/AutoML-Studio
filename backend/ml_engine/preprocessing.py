@@ -44,6 +44,24 @@ class DataPreprocessingEngine:
         self.df.reset_index(drop=True, inplace=True)
         return self
         
+    def drop_unnecessary_columns(self):
+        # Drop identifiers, timestamps, etc that shouldn't be used for ML
+        blacklist = ['id', 'uuid', 'index', 'serial', 'timestamp', 'created', 'updated']
+        cols_to_drop = []
+        for col in self.df.columns:
+            name_lower = col.lower()
+            is_id = any(term in name_lower for term in blacklist) or name_lower.endswith('id')
+            is_datetime = 'datetime' in str(self.df[col].dtype) or 'date' in name_lower
+            
+            # Also drop constant columns
+            nunique = self.df[col].nunique()
+            if is_id or is_datetime or nunique < 2 or (nunique == len(self.df) and self.df[col].dtype == 'object'):
+                cols_to_drop.append(col)
+                
+        if cols_to_drop:
+            self.df.drop(columns=cols_to_drop, inplace=True, errors='ignore')
+        return self
+        
     def encode_labels(self, columns=None):
         if columns is None:
             columns = self.df.select_dtypes(include=['object', 'category']).columns.tolist()
@@ -194,6 +212,9 @@ class DataPreprocessingEngine:
         return self
 
     def apply_pipeline(self, config: dict):
+        # Always drop unnecessary columns first to clean up the data for ML
+        self.drop_unnecessary_columns()
+        
         if config.get('remove_duplicates'):
             self.remove_duplicates()
             

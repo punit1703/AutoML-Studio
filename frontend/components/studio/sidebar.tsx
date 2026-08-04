@@ -7,10 +7,7 @@ import { cn } from "@/lib/utils";
 import { useAppContext } from "@/context/AppContext";
 import { 
   LayoutDashboard, 
-  FolderKanban, 
-  Rocket, 
   Globe, 
-  Settings,
   Database,
   Plus
 } from "lucide-react";
@@ -18,10 +15,7 @@ import { motion } from "framer-motion";
 
 const sidebarNavItems = [
   { title: "Dashboard", href: "/studio/dashboard", icon: LayoutDashboard },
-  { title: "Projects", href: "/studio/projects", icon: FolderKanban },
-  { title: "Deployments", href: "/studio/deployments", icon: Rocket },
   { title: "Prediction Apps", href: "/studio/apps", icon: Globe },
-  { title: "Settings", href: "/studio/settings", icon: Settings },
 ];
 
 export function StudioSidebar() {

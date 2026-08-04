@@ -8,6 +8,7 @@ import os
 from .models import Dataset
 from .serializers import DatasetSerializer, DatasetUploadSerializer
 from .services import DatasetService
+from projects.models import Project
 
 class DatasetViewSet(viewsets.ModelViewSet):
     serializer_class = DatasetSerializer
@@ -36,6 +37,19 @@ class DatasetViewSet(viewsets.ModelViewSet):
         # Return serialized dataset object
         response_serializer = DatasetSerializer(dataset)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['post'])
+    def upload_multiple(self, request):
+        project_id = request.data.get('project_id')
+        files = request.FILES.getlist('files')
+        
+        if not project_id or not files:
+            return Response({"error": "project_id and files are required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        project = get_object_or_404(Project, id=project_id)
+        
+        result = DatasetService.process_multiple_uploads(project, files)
+        return Response(result, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['get'])
     def preview(self, request, pk=None):

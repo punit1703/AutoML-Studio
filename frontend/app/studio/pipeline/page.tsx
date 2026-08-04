@@ -6,10 +6,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAppContext } from "@/context/AppContext";
 import api from "@/lib/api";
 import { 
-  CheckCircle2, Loader2, Target, Wand2, Rocket, ArrowRight, BarChart2, Star, Link as LinkIcon
+  CheckCircle2, Loader2, Target, Wand2, Rocket, ArrowRight, BarChart2, Star, Link as LinkIcon, Globe
 } from "lucide-react";
 
-type PipelineStep = "analysis" | "target-selection" | "execution" | "deployment";
+type PipelineStep = "analysis" | "target-selection" | "execution" | "preview" | "deployment";
 
 export default function PipelinePage() {
   const router = useRouter();
@@ -36,6 +36,8 @@ export default function PipelinePage() {
   ]);
   const [currentExecutionIndex, setCurrentExecutionIndex] = React.useState<number>(0);
   const [deploymentResult, setDeploymentResult] = React.useState<any>(null);
+  const [schemaFeatures, setSchemaFeatures] = React.useState<any[]>([]);
+  const [isPublishing, setIsPublishing] = React.useState(false);
 
   React.useEffect(() => {
     if (!datasetId) {
@@ -45,6 +47,29 @@ export default function PipelinePage() {
 
     const loadAnalysis = async () => {
       try {
+        // First check if the project already has a deployment
+        if (projectId) {
+          const projRes = await api.get(`v1/projects/${projectId}/`);
+          if (projRes.data.latest_deployment_id) {
+            // Fetch the deployment to populate the UI
+            const depRes = await api.get(`v1/deployments/${projRes.data.latest_deployment_id}/`);
+            const dep = depRes.data;
+            
+            // Format to match expected deploymentResult
+            setDeploymentResult({
+              deployment_id: dep.id,
+              problem_type: dep.schema?.metrics?.problem_type || "classification",
+              best_model: {
+                name: dep.model_name,
+                metrics: dep.schema?.metrics || {}
+              }
+            });
+            setSelectedTarget(dep.target_column);
+            setCurrentStep("deployment");
+            return; // Skip analysis
+          }
+        }
+
         const analyzeRes = await api.get(`v1/datasets/${datasetId}/analyze/`);
         setAnalysisData(analyzeRes.data);
         
@@ -83,15 +108,42 @@ export default function PipelinePage() {
     try {
       const res = await api.post(`v1/datasets/${datasetId}/run_pipeline/`, { target_column: selectedTarget });
       setDeploymentResult(res.data);
+      if (res.data.schema?.features) {
+        setSchemaFeatures(res.data.schema.features);
+      }
       clearInterval(interval);
       setCurrentExecutionIndex(executionLog.length); // complete all
       setTimeout(() => {
-        setCurrentStep("deployment");
+        setCurrentStep("preview");
       }, 1000);
     } catch (e) {
       console.error(e);
       clearInterval(interval);
       alert("Pipeline failed. See console.");
+    }
+  };
+
+  const updateFeature = (index: number, field: string, value: any) => {
+    const updated = [...schemaFeatures];
+    updated[index] = { ...updated[index], [field]: value };
+    setSchemaFeatures(updated);
+  };
+
+  const handlePublish = async () => {
+    setIsPublishing(true);
+    try {
+      const updatedSchema = { ...deploymentResult.schema, features: schemaFeatures };
+      await api.patch(`v1/deployments/${deploymentResult.deployment_id}/`, {
+        schema: updatedSchema
+      });
+      // Update local state just in case
+      setDeploymentResult({ ...deploymentResult, schema: updatedSchema });
+      setCurrentStep("deployment");
+    } catch (e) {
+      console.error(e);
+      alert("Failed to publish app.");
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -243,6 +295,75 @@ export default function PipelinePage() {
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Step 3.5: Deployment Preview */}
+        {currentStep === "preview" && deploymentResult && (
+          <motion.div
+            key="preview"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-4xl mx-auto space-y-6"
+          >
+            <div className="bg-card border border-border p-8 rounded-xl shadow-xl">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <Globe className="w-6 h-6 text-primary" /> Application Preview
+                  </h2>
+                  <p className="text-muted-foreground mt-1">Configure your form fields before publishing.</p>
+                </div>
+                <button 
+                  onClick={handlePublish}
+                  disabled={isPublishing}
+                  className="px-6 py-3 bg-primary text-background font-bold rounded-lg disabled:opacity-50 flex items-center gap-2 hover:bg-primary/90 transition-all shadow-[0_0_20px_rgba(56,189,248,0.4)]"
+                >
+                  {isPublishing ? <Loader2 className="w-5 h-5 animate-spin" /> : "Publish App"}
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {schemaFeatures.map((feat, index) => (
+                  <div key={feat.name} className="flex flex-col sm:flex-row gap-4 p-4 bg-muted/50 border border-border rounded-lg items-start sm:items-center justify-between">
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm font-bold text-foreground">{feat.name}</span>
+                        <span className="text-[10px] uppercase bg-primary/20 text-primary px-2 py-0.5 rounded-full">{feat.type}</span>
+                      </div>
+                      <input 
+                        type="text" 
+                        value={feat.label || feat.name}
+                        onChange={(e) => updateFeature(index, 'label', e.target.value)}
+                        className="bg-background border border-border rounded px-3 py-1.5 text-sm w-full max-w-xs focus:ring-1 focus:ring-primary outline-none"
+                        placeholder="Display Label"
+                      />
+                    </div>
+                    
+                    <div className="flex items-center gap-4 text-sm shrink-0">
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input 
+                          type="checkbox"
+                          checked={feat.optional || false}
+                          onChange={(e) => updateFeature(index, 'optional', e.target.checked)}
+                          className="accent-primary w-4 h-4"
+                        />
+                        Optional
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input 
+                          type="checkbox"
+                          checked={feat.hidden || false}
+                          onChange={(e) => updateFeature(index, 'hidden', e.target.checked)}
+                          className="accent-primary w-4 h-4"
+                        />
+                        Hidden
+                      </label>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </motion.div>

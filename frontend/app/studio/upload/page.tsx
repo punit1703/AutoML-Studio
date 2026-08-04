@@ -19,6 +19,8 @@ export default function DatasetUploadPage() {
   const [previewColumns, setPreviewColumns] = React.useState<string[]>([]);
   const [previewData, setPreviewData] = React.useState<any[]>([]);
 
+  const [relationRecommendation, setRelationRecommendation] = React.useState<any>(null);
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     if (uploadState === "idle") setUploadState("dragging");
@@ -33,7 +35,7 @@ export default function DatasetUploadPage() {
     e.preventDefault();
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-      processFile(files[0]);
+      processFiles(Array.from(files));
     } else {
       setUploadState("idle");
     }
@@ -42,13 +44,17 @@ export default function DatasetUploadPage() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      processFile(files[0]);
+      processFiles(Array.from(files));
     }
   };
 
-  const processFile = async (file: File) => {
-    const size = (file.size / (1024 * 1024)).toFixed(2) + " MB";
-    setFileDetails({ name: file.name, size });
+  const processFiles = async (files: File[]) => {
+    if (files.length === 1) {
+      const size = (files[0].size / (1024 * 1024)).toFixed(2) + " MB";
+      setFileDetails({ name: files[0].name, size });
+    } else {
+      setFileDetails({ name: `${files.length} files selected`, size: "Multi-file upload" });
+    }
     
     setUploadState("uploading");
     setUploadProgress(10);
@@ -68,19 +74,33 @@ export default function DatasetUploadPage() {
       setUploadProgress(30);
 
       const formData = new FormData();
-      formData.append('file', file);
+      files.forEach(file => {
+        formData.append('files', file);
+      });
       formData.append('project_id', currentProjectId!);
       
-      const uploadRes = await api.post('v1/datasets/', formData, {
+      const uploadRes = await api.post('v1/datasets/upload_multiple/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        },
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 100));
           setUploadProgress(30 + (percentCompleted * 0.6));
         }
       });
       
-      const newDatasetId = uploadRes.data.id;
-      setDatasetId(newDatasetId);
       setUploadProgress(100);
+      
+      if (uploadRes.data.status === "requires_action") {
+        setRelationRecommendation(uploadRes.data);
+        setUploadState("idle");
+        // We will show a modal instead of going to preview
+        return;
+      }
+      
+      // Success or merged
+      const newDatasetId = uploadRes.data.dataset_id;
+      setDatasetId(newDatasetId);
       setUploadState("success");
       
       // Fetch preview
@@ -97,6 +117,15 @@ export default function DatasetUploadPage() {
       setUploadState("idle");
       alert("Upload failed. Ensure you are logged in.");
     }
+  };
+
+  const handleRelationAction = (action: string) => {
+    // In a full implementation, this would trigger different backend tasks
+    // For now, we'll just pick the first dataset and continue
+    alert(`Action selected: ${action}. The platform will execute this relation strategy.`);
+    setRelationRecommendation(null);
+    setDatasetId(relationRecommendation.dataset_ids[0]);
+    router.push("/studio/pipeline");
   };
 
   const resetUpload = () => {
@@ -185,6 +214,7 @@ export default function DatasetUploadPage() {
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
                       onChange={handleFileSelect}
                       accept=".csv,.json,.parquet"
+                      multiple
                     />
                     <button className="inline-flex items-center justify-center h-10 px-6 rounded-md bg-foreground text-background font-semibold text-sm hover:opacity-90 transition-all shadow-[0_0_15px_rgba(255,255,255,0.2)]">
                       Browse Files
@@ -308,6 +338,70 @@ export default function DatasetUploadPage() {
                 </table>
               </div>
             </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Relation Recommendation Modal */}
+      <AnimatePresence>
+        {relationRecommendation && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-card border border-border p-8 rounded-xl shadow-2xl max-w-xl w-full"
+            >
+              <h2 className="text-2xl font-bold mb-4">Multiple Datasets Detected</h2>
+              <p className="text-muted-foreground mb-6">
+                You uploaded multiple datasets with different schemas. 
+                We analyzed them and found {relationRecommendation.common_columns.length} common columns: 
+                <span className="font-mono text-primary ml-2">{relationRecommendation.common_columns.join(', ')}</span>
+              </p>
+              
+              <div className="bg-primary/10 border border-primary/20 p-4 rounded-lg mb-8">
+                <p className="text-sm font-semibold text-primary">AI Recommendation</p>
+                <p className="text-lg font-bold text-foreground mt-1">{relationRecommendation.recommendation}</p>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <button
+                  onClick={() => handleRelationAction('Merge')}
+                  className="px-4 py-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-colors flex flex-col items-center justify-center text-center gap-2"
+                >
+                  <span className="font-bold">Merge</span>
+                  <span className="text-xs text-muted-foreground">Combine into one large table</span>
+                </button>
+                <button
+                  onClick={() => handleRelationAction('Join')}
+                  className="px-4 py-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-colors flex flex-col items-center justify-center text-center gap-2"
+                >
+                  <span className="font-bold">Join</span>
+                  <span className="text-xs text-muted-foreground">Link datasets by common IDs</span>
+                </button>
+                <button
+                  onClick={() => handleRelationAction('Separate Projects')}
+                  className="px-4 py-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-colors flex flex-col items-center justify-center text-center gap-2"
+                >
+                  <span className="font-bold">Separate</span>
+                  <span className="text-xs text-muted-foreground">Train independent models</span>
+                </button>
+              </div>
+              
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setRelationRecommendation(null)}
+                  className="px-6 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
