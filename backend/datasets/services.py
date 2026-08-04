@@ -125,6 +125,7 @@ class DatasetService:
             
         # Analyze relations
         dfs = []
+        import os
         for ds in datasets:
             dfs.append(read_dataframe(ds.file.path, ds.file_name))
             
@@ -136,43 +137,30 @@ class DatasetService:
                 schemas_match = False
                 break
                 
+        dataset_info = [{"id": str(ds.id), "name": ds.file_name, "class_name": os.path.splitext(ds.file_name)[0].capitalize()} for ds in datasets]
+        
         if schemas_match:
-            # Combine them automatically!
-            combined_df = pd.DataFrame()
-            for ds, df in zip(datasets, dfs):
-                # Add label column based on filename (e.g. fake.csv -> Fake)
-                import os
-                label_val = os.path.splitext(ds.file_name)[0].capitalize()
-                # Only add if it doesn't already exist
-                if 'Dataset_Label' not in df.columns:
-                    df['Dataset_Label'] = label_val
-                combined_df = pd.concat([combined_df, df], ignore_index=True)
-                
-            # Save combined file
-            import io
-            from django.core.files.base import ContentFile
-            
-            csv_buffer = io.StringIO()
-            combined_df.to_csv(csv_buffer, index=False)
-            
-            merged_dataset = Dataset.objects.create(
-                project=project,
-                file_name="Merged_Dataset.csv",
-                file_type="CSV",
-                file_size=len(csv_buffer.getvalue().encode('utf-8'))
-            )
-            merged_dataset.file.save('Merged_Dataset.csv', ContentFile(csv_buffer.getvalue().encode('utf-8')))
-            merged_dataset = DatasetService.extract_metadata(merged_dataset)
-            
-            # Delete individual datasets
+            # Check if filenames suggest multi-part
+            multipart_keywords = ["part", "split", "fold", "01", "02"]
+            is_multipart = False
             for ds in datasets:
-                ds.delete()
-                
-            return {
-                "status": "merged", 
-                "message": "Datasets had identical schemas and were automatically merged.",
-                "dataset_id": str(merged_dataset.id)
-            }
+                name_lower = ds.file_name.lower()
+                if any(kw in name_lower for kw in multipart_keywords):
+                    is_multipart = True
+                    break
+                    
+            if is_multipart:
+                return {
+                    "status": "requires_action",
+                    "pattern": "multi_part",
+                    "datasets": dataset_info
+                }
+            else:
+                return {
+                    "status": "requires_action",
+                    "pattern": "class_separated",
+                    "datasets": dataset_info
+                }
         else:
             # Schemas differ
             common_cols = set(dfs[0].columns)
@@ -180,16 +168,55 @@ class DatasetService:
                 common_cols.intersection_update(set(df.columns))
                 
             if len(common_cols) > 0:
-                recommendation = "Recommend Join"
+                return {
+                    "status": "requires_action",
+                    "pattern": "relational",
+                    "datasets": dataset_info,
+                    "common_columns": list(common_cols)
+                }
             else:
-                recommendation = "Recommend Separate Projects"
-                
-            return {
-                "status": "requires_action",
-                "recommendation": recommendation,
-                "dataset_ids": [str(ds.id) for ds in datasets],
-                "common_columns": list(common_cols)
-            }
+                return {
+                    "status": "requires_action",
+                    "pattern": "independent",
+                    "datasets": dataset_info
+                }
+    @staticmethod
+    def merge_class_separated(project, dataset_ids, classes, target_column_name):
+        datasets = Dataset.objects.filter(id__in=dataset_ids, project=project).order_by('created_at')
+        if len(datasets) != len(classes):
+            raise ValidationError("Mismatch between number of datasets and classes provided.")
+            
+        combined_df = pd.DataFrame()
+        for ds, cls_name in zip(datasets, classes):
+            df = read_dataframe(ds.file.path, ds.file_name)
+            if target_column_name not in df.columns:
+                df[target_column_name] = cls_name
+            combined_df = pd.concat([combined_df, df], ignore_index=True)
+            
+        import io
+        from django.core.files.base import ContentFile
+        
+        csv_buffer = io.StringIO()
+        combined_df.to_csv(csv_buffer, index=False)
+        
+        merged_dataset = Dataset.objects.create(
+            project=project,
+            file_name="Merged_Dataset.csv",
+            file_type="CSV",
+            file_size=len(csv_buffer.getvalue().encode('utf-8'))
+        )
+        merged_dataset.file.save('Merged_Dataset.csv', ContentFile(csv_buffer.getvalue().encode('utf-8')))
+        merged_dataset = DatasetService.extract_metadata(merged_dataset)
+        
+        # Cleanup old parts
+        for ds in datasets:
+            ds.delete()
+            
+        return {
+            "status": "success",
+            "message": "Datasets successfully merged with new target column.",
+            "dataset_id": str(merged_dataset.id)
+        }
 
 
     @staticmethod

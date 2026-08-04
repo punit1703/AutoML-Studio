@@ -119,13 +119,43 @@ export default function DatasetUploadPage() {
     }
   };
 
+  const [classSeparatedTargetName, setClassSeparatedTargetName] = React.useState("Dataset_Label");
+  const [isMerging, setIsMerging] = React.useState(false);
+
   const handleRelationAction = (action: string) => {
-    // In a full implementation, this would trigger different backend tasks
-    // For now, we'll just pick the first dataset and continue
     alert(`Action selected: ${action}. The platform will execute this relation strategy.`);
     setRelationRecommendation(null);
-    setDatasetId(relationRecommendation.dataset_ids[0]);
+    setDatasetId(relationRecommendation.datasets[0].id);
     router.push("/studio/pipeline");
+  };
+
+  const handleClassSeparatedMerge = async () => {
+    setIsMerging(true);
+    try {
+      const datasetIds = relationRecommendation.datasets.map((d: any) => d.id);
+      const classes = relationRecommendation.datasets.map((d: any) => d.class_name);
+      
+      const res = await api.post('v1/datasets/merge_class_separated/', {
+        project_id: projectId,
+        dataset_ids: datasetIds,
+        classes: classes,
+        target_column_name: classSeparatedTargetName
+      });
+      
+      setDatasetId(res.data.dataset_id);
+      setRelationRecommendation(null);
+      router.push("/studio/pipeline");
+    } catch (err: any) {
+      alert("Merge failed: " + (err.response?.data?.error || err.message));
+    } finally {
+      setIsMerging(false);
+    }
+  };
+
+  const handleClassLabelChange = (index: number, value: string) => {
+    const updated = { ...relationRecommendation };
+    updated.datasets[index].class_name = value;
+    setRelationRecommendation(updated);
   };
 
   const resetUpload = () => {
@@ -355,52 +385,149 @@ export default function DatasetUploadPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card border border-border p-8 rounded-xl shadow-2xl max-w-xl w-full"
+              className="bg-card border border-border p-8 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
             >
-              <h2 className="text-2xl font-bold mb-4">Multiple Datasets Detected</h2>
-              <p className="text-muted-foreground mb-6">
-                You uploaded multiple datasets with different schemas. 
-                We analyzed them and found {relationRecommendation.common_columns.length} common columns: 
-                <span className="font-mono text-primary ml-2">{relationRecommendation.common_columns.join(', ')}</span>
-              </p>
               
-              <div className="bg-primary/10 border border-primary/20 p-4 rounded-lg mb-8">
-                <p className="text-sm font-semibold text-primary">AI Recommendation</p>
-                <p className="text-lg font-bold text-foreground mt-1">{relationRecommendation.recommendation}</p>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                <button
-                  onClick={() => handleRelationAction('Merge')}
-                  className="px-4 py-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-colors flex flex-col items-center justify-center text-center gap-2"
-                >
-                  <span className="font-bold">Merge</span>
-                  <span className="text-xs text-muted-foreground">Combine into one large table</span>
-                </button>
-                <button
-                  onClick={() => handleRelationAction('Join')}
-                  className="px-4 py-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-colors flex flex-col items-center justify-center text-center gap-2"
-                >
-                  <span className="font-bold">Join</span>
-                  <span className="text-xs text-muted-foreground">Link datasets by common IDs</span>
-                </button>
-                <button
-                  onClick={() => handleRelationAction('Separate Projects')}
-                  className="px-4 py-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-colors flex flex-col items-center justify-center text-center gap-2"
-                >
-                  <span className="font-bold">Separate</span>
-                  <span className="text-xs text-muted-foreground">Train independent models</span>
-                </button>
-              </div>
-              
-              <div className="flex justify-end">
-                <button
-                  onClick={() => setRelationRecommendation(null)}
-                  className="px-6 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
+              {relationRecommendation.pattern === 'class_separated' && (
+                <>
+                  <h2 className="text-2xl font-bold mb-4">Class-Separated Datasets Detected</h2>
+                  <p className="text-muted-foreground mb-6">
+                    You uploaded multiple files with matching schemas. It looks like each file represents a different category or class.
+                    We can automatically merge them and create a target column for your ML model.
+                  </p>
+                  
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium mb-2">New Target Column Name</label>
+                    <input 
+                      type="text" 
+                      value={classSeparatedTargetName}
+                      onChange={(e) => setClassSeparatedTargetName(e.target.value)}
+                      className="w-full bg-input border border-border rounded px-3 py-2 text-foreground focus:ring-1 focus:ring-primary outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-3 mb-8">
+                    <label className="block text-sm font-medium">Verify Class Labels</label>
+                    {relationRecommendation.datasets.map((ds: any, idx: number) => (
+                      <div key={ds.id} className="flex items-center gap-4 bg-muted/50 p-3 rounded-lg border border-border">
+                        <span className="font-mono text-sm flex-1 truncate">{ds.name}</span>
+                        <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <input 
+                          type="text"
+                          value={ds.class_name}
+                          onChange={(e) => handleClassLabelChange(idx, e.target.value)}
+                          className="w-48 bg-input border border-border rounded px-3 py-1.5 text-sm text-foreground focus:ring-1 focus:ring-primary outline-none"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() => setRelationRecommendation(null)}
+                      className="px-6 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleClassSeparatedMerge}
+                      disabled={isMerging}
+                      className="px-6 py-2 bg-primary text-background font-bold rounded-lg disabled:opacity-50 flex items-center gap-2 hover:bg-primary/90 transition-all shadow-[0_0_15px_rgba(56,189,248,0.3)]"
+                    >
+                      {isMerging ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                      Merge & Continue
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {relationRecommendation.pattern === 'multi_part' && (
+                <>
+                  <h2 className="text-2xl font-bold mb-4">Multi-Part Dataset Detected</h2>
+                  <p className="text-muted-foreground mb-6">
+                    You uploaded multiple files that appear to be parts of the same dataset. 
+                    Would you like to combine them into one large dataset before training?
+                  </p>
+
+                  <div className="space-y-2 mb-8">
+                    {relationRecommendation.datasets.map((ds: any) => (
+                      <div key={ds.id} className="font-mono text-sm bg-muted/50 p-2 rounded border border-border">
+                        {ds.name}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() => handleRelationAction('Separate Projects')}
+                      className="px-6 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Keep Separate
+                    </button>
+                    <button
+                      onClick={() => handleRelationAction('Merge')}
+                      className="px-6 py-2 bg-primary text-background font-bold rounded-lg flex items-center gap-2 hover:bg-primary/90 transition-all shadow-[0_0_15px_rgba(56,189,248,0.3)]"
+                    >
+                      Combine Parts
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {(relationRecommendation.pattern === 'relational' || relationRecommendation.pattern === 'independent') && (
+                <>
+                  <h2 className="text-2xl font-bold mb-4">Multiple Datasets Detected</h2>
+                  <p className="text-muted-foreground mb-6">
+                    You uploaded multiple datasets with different schemas. 
+                    {relationRecommendation.pattern === 'relational' && (
+                      <span>
+                        We found {relationRecommendation.common_columns?.length} common columns: 
+                        <span className="font-mono text-primary ml-2">{relationRecommendation.common_columns?.join(', ')}</span>
+                      </span>
+                    )}
+                  </p>
+                  
+                  <div className="bg-primary/10 border border-primary/20 p-4 rounded-lg mb-8">
+                    <p className="text-sm font-semibold text-primary">AI Recommendation</p>
+                    <p className="text-lg font-bold text-foreground mt-1">
+                      {relationRecommendation.pattern === 'relational' ? 'Recommend Join' : 'Recommend Separate Projects'}
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                    <button
+                      onClick={() => handleRelationAction('Merge')}
+                      className="px-4 py-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-colors flex flex-col items-center justify-center text-center gap-2"
+                    >
+                      <span className="font-bold">Merge</span>
+                      <span className="text-xs text-muted-foreground">Combine into one large table</span>
+                    </button>
+                    <button
+                      onClick={() => handleRelationAction('Join')}
+                      className="px-4 py-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-colors flex flex-col items-center justify-center text-center gap-2"
+                    >
+                      <span className="font-bold">Join</span>
+                      <span className="text-xs text-muted-foreground">Link datasets by common IDs</span>
+                    </button>
+                    <button
+                      onClick={() => handleRelationAction('Separate Projects')}
+                      className="px-4 py-3 rounded-lg border border-border hover:border-primary hover:bg-primary/5 transition-colors flex flex-col items-center justify-center text-center gap-2"
+                    >
+                      <span className="font-bold">Separate</span>
+                      <span className="text-xs text-muted-foreground">Train independent models</span>
+                    </button>
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => setRelationRecommendation(null)}
+                      className="px-6 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}

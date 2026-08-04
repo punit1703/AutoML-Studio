@@ -46,3 +46,37 @@ class DatasetAPITests(APITestCase):
         }
         response = self.client.post('/api/v1/datasets/', data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_upload_multiple_class_separated(self):
+        fake_csv = SimpleUploadedFile("fake.csv", b"id,val\n1,10\n2,20\n", content_type="text/csv")
+        true_csv = SimpleUploadedFile("true.csv", b"id,val\n3,30\n4,40\n", content_type="text/csv")
+        
+        data = {
+            'project_id': self.project.id,
+            'files': [fake_csv, true_csv]
+        }
+        response = self.client.post('/api/v1/datasets/upload_multiple/', data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Schemas match perfectly, but names don't imply "part"
+        self.assertEqual(response.data['status'], 'requires_action')
+        self.assertEqual(response.data['pattern'], 'class_separated')
+        self.assertEqual(len(response.data['datasets']), 2)
+        
+        dataset_ids = [ds['id'] for ds in response.data['datasets']]
+        
+        # Now test merge_class_separated
+        merge_data = {
+            'project_id': self.project.id,
+            'dataset_ids': dataset_ids,
+            'classes': ['FakeClass', 'TrueClass'],
+            'target_column_name': 'MyLabel'
+        }
+        merge_response = self.client.post('/api/v1/datasets/merge_class_separated/', merge_data, format='json')
+        self.assertEqual(merge_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(merge_response.data['status'], 'success')
+        
+        # Verify merged dataset
+        merged_ds = Dataset.objects.get(id=merge_response.data['dataset_id'])
+        self.assertEqual(merged_ds.row_count, 4)
+        self.assertEqual(merged_ds.column_count, 3) # id, val, MyLabel

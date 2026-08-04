@@ -51,6 +51,24 @@ class DatasetViewSet(viewsets.ModelViewSet):
         result = DatasetService.process_multiple_uploads(project, files)
         return Response(result, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['post'])
+    def merge_class_separated(self, request):
+        project_id = request.data.get('project_id')
+        dataset_ids = request.data.get('dataset_ids', [])
+        classes = request.data.get('classes', [])
+        target_column_name = request.data.get('target_column_name', 'Class')
+        
+        if not project_id or not dataset_ids or not classes:
+            return Response({"error": "project_id, dataset_ids, and classes are required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        project = get_object_or_404(Project, id=project_id)
+        
+        try:
+            result = DatasetService.merge_class_separated(project, dataset_ids, classes, target_column_name)
+            return Response(result, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
     @action(detail=True, methods=['get'])
     def preview(self, request, pk=None):
         dataset = self.get_object()
