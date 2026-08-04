@@ -107,7 +107,12 @@ export default function PredictionAppPage() {
     const isLegacyCategorical = typeof feat === 'string' && schema.categorical?.includes(feat);
     
     const name = typeof feat === 'string' ? feat : feat.name;
-    const type = typeof feat === 'string' ? (isLegacyNumeric ? 'numeric' : 'text') : feat.type;
+    let type = typeof feat === 'string' ? (isLegacyNumeric ? 'numeric' : 'text') : feat.type;
+    
+    // Treat legacy text or general text as long_text if modality is text
+    if (type === 'text' && schema.modality === 'text') {
+      type = 'long_text';
+    }
     const options = feat.options || [];
     
     if (feat.hidden) return null;
@@ -156,6 +161,14 @@ export default function PredictionAppPage() {
               <span className="text-sm">No</span>
             </label>
           </div>
+        ) : type === 'long_text' ? (
+          <textarea
+            required={!feat.optional}
+            value={formData[name] === undefined ? "" : formData[name]}
+            onChange={(e) => handleInputChange(name, e.target.value, 'text')}
+            className="w-full min-h-[120px] p-3 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground resize-y"
+            placeholder={`Enter ${label}...`}
+          />
         ) : (
           <input 
             type={type === 'numeric' ? "number" : "text"}

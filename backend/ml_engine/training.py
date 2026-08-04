@@ -53,9 +53,25 @@ class ModelTrainingEngine:
         return "classification"
 
     def _build_preprocessor(self):
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        
         X = self.df.drop(columns=[self.target_column])
         numeric_cols = X.select_dtypes(include=[np.number]).columns.tolist()
-        categorical_cols = X.select_dtypes(exclude=[np.number]).columns.tolist()
+        potential_cat_cols = X.select_dtypes(exclude=[np.number]).columns.tolist()
+
+        categorical_cols = []
+        text_cols = []
+        
+        for col in potential_cat_cols:
+            non_null_vals = X[col].dropna().astype(str)
+            if not non_null_vals.empty:
+                avg_len = non_null_vals.str.len().mean()
+                if avg_len > 30 and X[col].nunique() > 10:
+                    text_cols.append(col)
+                else:
+                    categorical_cols.append(col)
+            else:
+                categorical_cols.append(col)
 
         numeric_transformer = Pipeline(steps=[
             ('imputer', SimpleImputer(strategy='mean')),
@@ -67,13 +83,18 @@ class ModelTrainingEngine:
             ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
         ])
 
-        preprocessor = ColumnTransformer(
-            transformers=[
-                ('num', numeric_transformer, numeric_cols),
-                ('cat', categorical_transformer, categorical_cols)
-            ]
-        )
-        return preprocessor, numeric_cols, categorical_cols
+        transformers = []
+        if numeric_cols:
+            transformers.append(('num', numeric_transformer, numeric_cols))
+        if categorical_cols:
+            transformers.append(('cat', categorical_transformer, categorical_cols))
+            
+        for col in text_cols:
+            # TfidfVectorizer expects a 1D array of strings
+            transformers.append((f'text_{col}', TfidfVectorizer(max_features=1000, stop_words='english'), col))
+
+        preprocessor = ColumnTransformer(transformers=transformers)
+        return preprocessor, numeric_cols, categorical_cols, text_cols
 
     def _prepare_data(self, problem_type):
         X = self.df.drop(columns=[self.target_column])
@@ -167,7 +188,7 @@ class ModelTrainingEngine:
     def train_and_evaluate(self):
         problem_type = self._detect_problem_type()
         X_train, X_test, y_train, y_test = self._prepare_data(problem_type)
-        preprocessor, num_cols, cat_cols = self._build_preprocessor()
+        preprocessor, num_cols, cat_cols, text_cols = self._build_preprocessor()
         
         if problem_type == 'regression':
             models = self._get_regression_models(preprocessor)
@@ -254,7 +275,9 @@ class ModelTrainingEngine:
             dtype = X_train[col].dtype
             feat = {"name": col, "type": "text", "optional": False}
             
-            if pd.api.types.is_numeric_dtype(dtype):
+            if col in text_cols:
+                feat["type"] = "long_text"
+            elif pd.api.types.is_numeric_dtype(dtype):
                 # Detect boolean by checking unique values
                 nunique = X_train[col].dropna().nunique()
                 unique_vals = X_train[col].dropna().unique()
@@ -271,11 +294,20 @@ class ModelTrainingEngine:
                 feat["options"] = [str(cat) for cat in categories]
                 
             features_schema.append(feat)
+            
+        modality = "tabular"
+        if len(text_cols) > 0:
+            if len(num_cols) == 0 and len(cat_cols) == 0:
+                modality = "text"
+            else:
+                modality = "tabular_text_hybrid"
         
         # Schema representing the required input for the pipeline
         schema = {
+            "modality": modality,
             "numeric": num_cols,
             "categorical": cat_cols,
+            "text": text_cols,
             "features": features_schema
         }
 
