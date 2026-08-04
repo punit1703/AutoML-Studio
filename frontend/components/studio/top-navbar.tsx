@@ -84,38 +84,11 @@ export function StudioTopNavbar() {
             </span>
           </div>
 
-          {/* Dataset Switcher */}
-          {datasets.length > 0 && (
-            <div className="hidden sm:flex items-center gap-2">
-              <span className="text-muted-foreground text-sm">/</span>
-              <select
-                value={datasetId || ""}
-                onChange={(e) => setDatasetId(e.target.value)}
-                className="bg-transparent border border-border text-xs font-mono text-muted-foreground outline-none cursor-pointer rounded px-2 py-1 hover:text-foreground hover:border-muted-foreground/50 transition-colors max-w-[200px]"
-              >
-                {datasets.map(d => (
-                  <option key={d.id} value={d.id} className="bg-background text-foreground">
-                    {d.file_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+          {/* Dataset Switcher Removed */}
         </div>
 
         <div className="flex items-center gap-4 flex-1 justify-center max-w-md">
-          {/* Command Palette / Search Style */}
-          <div className="relative w-full hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search datasets, models, or settings..." 
-              className="w-full h-9 pl-9 pr-4 bg-muted border-border font-mono text-xs text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/20 rounded-md shadow-inner"
-            />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
-              <kbd className="px-1.5 py-0.5 rounded border border-border bg-background text-[10px] font-mono text-muted-foreground">⌘</kbd>
-              <kbd className="px-1.5 py-0.5 rounded border border-border bg-background text-[10px] font-mono text-muted-foreground">K</kbd>
-            </div>
-          </div>
+          {/* Search Bar Removed */}
         </div>
 
         <div className="flex items-center gap-3 flex-1 justify-end">

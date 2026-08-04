@@ -54,6 +54,21 @@ class DatasetViewSet(viewsets.ModelViewSet):
         analysis_data = DatasetService.analyze_dataset(dataset, target_column=target_column)
         return Response(analysis_data, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['get'])
+    def suggest_targets(self, request, pk=None):
+        dataset = self.get_object()
+        suggestions = DatasetService.suggest_targets(dataset)
+        return Response(suggestions, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'])
+    def run_pipeline(self, request, pk=None):
+        dataset = self.get_object()
+        target_column = request.data.get('target_column')
+        if not target_column:
+            return Response({"error": "target_column is required"}, status=status.HTTP_400_BAD_REQUEST)
+        result = DatasetService.run_pipeline(dataset, target_column)
+        return Response(result, status=status.HTTP_200_OK)
+
 
     @action(detail=True, methods=['post'])
     def preprocess(self, request, pk=None):

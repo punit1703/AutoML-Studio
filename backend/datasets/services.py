@@ -112,6 +112,35 @@ class DatasetService:
             raise ValidationError(f"Error analyzing dataset: {str(e)}")
 
     @staticmethod
+    def suggest_targets(dataset: Dataset):
+        try:
+            df = read_dataframe(dataset.file.path, dataset.file_name)
+            suggestions = []
+            for col in df.columns:
+                score = 1
+                name_lower = col.lower()
+                if any(x in name_lower for x in ['attrition', 'churn', 'price', 'salary', 'disease', 'target', 'label', 'class', 'status', 'result', 'is_']):
+                    score += 2
+                
+                nunique = df[col].nunique()
+                if nunique < 2:
+                    continue # single value, bad target
+                if nunique == len(df) and df[col].dtype == 'object':
+                    continue # ID column, bad target
+                
+                if nunique <= 10:
+                    score += 2
+                elif pd.api.types.is_numeric_dtype(df[col]):
+                    score += 1
+                
+                suggestions.append({"column": col, "score": min(score, 5), "stars": "★" * min(score, 5)})
+            
+            suggestions.sort(key=lambda x: x['score'], reverse=True)
+            return {"suggestions": suggestions[:10]}
+        except Exception as e:
+            raise ValidationError(f"Error suggesting targets: {str(e)}")
+
+    @staticmethod
     def preprocess_dataset(dataset: Dataset, config: dict):
         try:
             df = read_dataframe(dataset.file.path, dataset.file_name)
@@ -158,6 +187,34 @@ class DatasetService:
             return results
         except Exception as e:
             raise ValidationError(f"Error training models: {str(e)}")
+
+    @staticmethod
+    def run_pipeline(dataset: Dataset, target_column: str):
+        try:
+            from deployments.models import Deployment
+            df = read_dataframe(dataset.file.path, dataset.file_name)
+            
+            output_dir = os.path.join(settings.MEDIA_ROOT, 'models', str(dataset.id))
+            
+            engine = ModelTrainingEngine(df, target_column, output_dir)
+            results = engine.train_and_evaluate()
+            
+            best = results['best_model']
+            # Create deployment
+            deployment = Deployment.objects.create(
+                project=dataset.project,
+                dataset=dataset,
+                model_name=best['name'],
+                model_path=best['absolute_path'],
+                target_column=target_column,
+                schema=best['schema']
+            )
+            
+            results['deployment_id'] = deployment.id
+            return results
+        except Exception as e:
+            import traceback
+            raise ValidationError(f"Error running pipeline: {str(e)} \n {traceback.format_exc()}")
 
     @staticmethod
     def evaluate_models(dataset: Dataset, target_column: str):

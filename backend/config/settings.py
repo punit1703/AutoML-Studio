@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'datasets',
     'reports',
     'notebooks',
+    'deployments',
     'drf_spectacular',
 ]
 

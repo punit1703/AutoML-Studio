@@ -269,10 +269,10 @@ export default function DatasetUploadPage() {
                     Upload Different File
                   </button>
                   <button 
-                    onClick={() => router.push("/studio/analysis")}
+                    onClick={() => router.push("/studio/pipeline")}
                     className="px-4 py-2 rounded-md bg-primary text-background font-semibold text-sm hover:bg-primary/90 transition-all shadow-[0_0_15px_rgba(56,189,248,0.3)] flex items-center gap-2"
                   >
-                    Start Analysis <Play className="w-4 h-4" />
+                    Start Pipeline <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </CardContent>

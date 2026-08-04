@@ -7,13 +7,10 @@ import { cn } from "@/lib/utils";
 import { useAppContext } from "@/context/AppContext";
 import { 
   LayoutDashboard, 
-  Upload, 
-  BarChart2, 
-  Wand2, 
-  PieChart, 
-  Cpu, 
-  CheckSquare, 
-  Download,
+  FolderKanban, 
+  Rocket, 
+  Globe, 
+  Settings,
   Database,
   Plus
 } from "lucide-react";
@@ -21,13 +18,10 @@ import { motion } from "framer-motion";
 
 const sidebarNavItems = [
   { title: "Dashboard", href: "/studio/dashboard", icon: LayoutDashboard },
-  { title: "Data Upload", href: "/studio/upload", icon: Upload },
-  { title: "Analysis", href: "/studio/analysis", icon: BarChart2 },
-  { title: "Cleaning", href: "/studio/cleaning", icon: Wand2 },
-  { title: "Visualization", href: "/studio/visualization", icon: PieChart },
-  { title: "Training", href: "/studio/training", icon: Cpu },
-  { title: "Evaluation", href: "/studio/evaluation", icon: CheckSquare },
-  { title: "Downloads", href: "/studio/downloads", icon: Download },
+  { title: "Projects", href: "/studio/projects", icon: FolderKanban },
+  { title: "Deployments", href: "/studio/deployments", icon: Rocket },
+  { title: "Prediction Apps", href: "/studio/apps", icon: Globe },
+  { title: "Settings", href: "/studio/settings", icon: Settings },
 ];
 
 export function StudioSidebar() {
@@ -64,7 +58,7 @@ export function StudioSidebar() {
 
       <nav className="flex-1 overflow-y-auto px-3 space-y-1 scrollbar-hide">
         {sidebarNavItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname.startsWith(item.href);
           const Icon = item.icon;
 
           return (
