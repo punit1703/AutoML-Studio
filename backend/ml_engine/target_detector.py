@@ -61,17 +61,23 @@ class TargetDetectionEngine:
         col_meta = self.columns_meta.get(col_name, {})
         inferred_type = col_meta.get("inferred_type", "categorical")
         unique_count = col_meta.get("unique_count", 0)
+        pandas_dtype = col_meta.get("pandas_dtype", "").lower()
         
+        # Binary target
+        if inferred_type == "boolean" or unique_count == 2:
+            return "Binary Classification"
+            
         if inferred_type == "numeric":
-            # If numeric but very few unique values, could be classification
-            if unique_count <= 20:
-                return "Classification"
-            # If it's floats, it's regression
-            if "float" in col_meta.get("pandas_dtype", "").lower():
-                return "Regression"
+            # Small cardinality integers are often multiclass targets
+            if unique_count <= 20 and "float" not in pandas_dtype:
+                return "Multiclass Classification"
+            # High cardinality or floats are regression
             return "Regression"
-        else:
-            return "Classification"
+            
+        if inferred_type == "categorical":
+            return "Multiclass Classification"
+            
+        return "Regression"
             
     def _score_column(self, col_name: str, col_meta: dict, position_idx: int, total_columns: int) -> tuple:
         score = 0

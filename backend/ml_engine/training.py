@@ -34,27 +34,17 @@ except ImportError:
 
 
 class ModelTrainingEngine:
-    def __init__(self, df: pd.DataFrame, target_column: str, model_save_dir: str):
+    def __init__(self, df: pd.DataFrame, target_column: str, model_save_dir: str, problem_type: str = None, preprocessing_plan: dict = None):
         self.df = df.copy()
         self.target_column = target_column
         self.model_save_dir = model_save_dir
+        self.problem_type = problem_type
+        self.preprocessing_plan = preprocessing_plan
         os.makedirs(self.model_save_dir, exist_ok=True)
         self.label_encoder = None
         
-    def _detect_problem_type(self):
-        if self.target_column not in self.df.columns:
-            raise ValueError(f"Target column '{self.target_column}' not found.")
-            
-        dtype = self.df[self.target_column].dtype
-        if pd.api.types.is_numeric_dtype(dtype):
-            unique_count = self.df[self.target_column].nunique()
-            if unique_count <= 20:
-                return "classification"
-            return "regression"
-        return "classification"
-
     def _build_preprocessor(self):
-        from sklearn.feature_extraction.text import TfidfVectorizer
+        from ml_engine.pipeline_builder import PipelineBuilder
         
         X = self.df.drop(columns=[self.target_column])
         numeric_cols = X.select_dtypes(include=[np.number]).columns.tolist()
@@ -73,28 +63,35 @@ class ModelTrainingEngine:
                     categorical_cols.append(col)
             else:
                 categorical_cols.append(col)
-
-        numeric_transformer = Pipeline(steps=[
-            ('imputer', SimpleImputer(strategy='mean')),
-            ('scaler', StandardScaler())
-        ])
-
-        categorical_transformer = Pipeline(steps=[
-            ('imputer', SimpleImputer(strategy='most_frequent')),
-            ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
-        ])
-
-        transformers = []
-        if numeric_cols:
-            transformers.append(('num', numeric_transformer, numeric_cols))
-        if categorical_cols:
-            transformers.append(('cat', categorical_transformer, categorical_cols))
+                
+        if self.preprocessing_plan:
+            builder = PipelineBuilder(self.preprocessing_plan)
+            preprocessor = builder.build_pipeline()
+        else:
+            # Fallback to old behavior if no plan provided
+            from sklearn.feature_extraction.text import TfidfVectorizer
             
-        for col in text_cols:
-            # TfidfVectorizer expects a 1D array of strings
-            transformers.append((f'text_{col}', TfidfVectorizer(max_features=1000, stop_words='english'), col))
+            numeric_transformer = Pipeline(steps=[
+                ('imputer', SimpleImputer(strategy='mean')),
+                ('scaler', StandardScaler())
+            ])
 
-        preprocessor = ColumnTransformer(transformers=transformers)
+            categorical_transformer = Pipeline(steps=[
+                ('imputer', SimpleImputer(strategy='most_frequent')),
+                ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
+            ])
+
+            transformers = []
+            if numeric_cols:
+                transformers.append(('num', numeric_transformer, numeric_cols))
+            if categorical_cols:
+                transformers.append(('cat', categorical_transformer, categorical_cols))
+                
+            for col in text_cols:
+                transformers.append((f'text_{col}', TfidfVectorizer(max_features=1000, stop_words='english'), col))
+
+            preprocessor = ColumnTransformer(transformers=transformers)
+            
         return preprocessor, numeric_cols, categorical_cols, text_cols
 
     def _prepare_data(self, problem_type):
@@ -105,7 +102,7 @@ class ModelTrainingEngine:
         X = X.loc[valid_idx]
         y_valid = y.loc[valid_idx]
         
-        if problem_type == 'classification':
+        if problem_type != 'Regression':
             le = LabelEncoder()
             y_valid = pd.Series(le.fit_transform(y_valid), index=valid_idx)
             self.label_encoder = le
@@ -151,14 +148,18 @@ class ModelTrainingEngine:
             
         return models
         
-    def _get_classification_models(self, preprocessor):
+    def _get_classification_models(self, preprocessor, problem_type):
         from sklearn.feature_selection import SelectKBest, f_classif, VarianceThreshold
 
         k_options = [10, 20, 50, 'all']
+        
+        is_multiclass = problem_type == "Multiclass Classification"
 
         models = {}
+        
+        log_reg = LogisticRegression(max_iter=500, random_state=42, multi_class='multinomial' if is_multiclass else 'auto')
         models['Logistic Regression'] = (
-            Pipeline([('preprocessor', preprocessor), ('variance', VarianceThreshold()), ('selector', SelectKBest(score_func=f_classif)), ('model', LogisticRegression(max_iter=500, random_state=42))]),
+            Pipeline([('preprocessor', preprocessor), ('variance', VarianceThreshold()), ('selector', SelectKBest(score_func=f_classif)), ('model', log_reg)]),
             {
                 'selector__k': k_options,
                 'model__C': [0.1, 1.0, 10.0]
@@ -175,8 +176,9 @@ class ModelTrainingEngine:
         )
         
         if XGB_AVAILABLE:
+            xgb_objective = 'multi:softprob' if is_multiclass else 'binary:logistic'
             models['XGBoost'] = (
-                Pipeline([('preprocessor', preprocessor), ('variance', VarianceThreshold()), ('selector', SelectKBest(score_func=f_classif)), ('model', xgb.XGBClassifier(random_state=42))]),
+                Pipeline([('preprocessor', preprocessor), ('variance', VarianceThreshold()), ('selector', SelectKBest(score_func=f_classif)), ('model', xgb.XGBClassifier(random_state=42, objective=xgb_objective))]),
                 {
                     'selector__k': k_options,
                     'model__n_estimators': [50, 100],
@@ -187,21 +189,23 @@ class ModelTrainingEngine:
         return models
 
     def train_and_evaluate(self, progress_callback=None):
-        if progress_callback: progress_callback("Detecting problem type", 15)
-        problem_type = self._detect_problem_type()
+        if not self.problem_type:
+            raise ValueError("problem_type must be specified")
+            
+        is_regression = self.problem_type == "Regression"
         
         if progress_callback: progress_callback("Preparing data", 25)
-        X_train, X_test, y_train, y_test = self._prepare_data(problem_type)
+        X_train, X_test, y_train, y_test = self._prepare_data(self.problem_type)
         
         if progress_callback: progress_callback("Building preprocessing pipeline", 35)
         preprocessor, num_cols, cat_cols, text_cols = self._build_preprocessor()
         
         if progress_callback: progress_callback("Setting up models", 45)
-        if problem_type == 'regression':
+        if is_regression:
             models = self._get_regression_models(preprocessor)
             cv_splitter = KFold(n_splits=3, shuffle=True, random_state=42)
         else:
-            models = self._get_classification_models(preprocessor)
+            models = self._get_classification_models(preprocessor, self.problem_type)
             cv_splitter = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
             
         results = []
@@ -237,7 +241,7 @@ class ModelTrainingEngine:
                         model = base_model
                         model.set_params(**params)
                         
-                        scoring = 'r2' if problem_type == 'regression' else 'accuracy'
+                        scoring = 'r2' if is_regression else 'accuracy'
                         scores = cross_val_score(model, X_train, y_train, cv=cv_splitter, scoring=scoring, n_jobs=-1)
                         return scores.mean()
 
@@ -262,7 +266,7 @@ class ModelTrainingEngine:
                 metrics = {}
                 score_for_comparison = cv_score
                 
-                if problem_type == 'regression':
+                if is_regression:
                     metrics['mse'] = float(mean_squared_error(y_test, y_pred))
                     metrics['mae'] = float(mean_absolute_error(y_test, y_pred))
                     metrics['r2'] = float(r2_score(y_test, y_pred))

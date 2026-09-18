@@ -166,7 +166,7 @@ class TargetDetectionEngineTests(unittest.TestCase):
         churn_candidate = next((c for c in candidates if c["column"] == "churn"), None)
         self.assertIsNotNone(churn_candidate)
         self.assertEqual(churn_candidate["confidence"], "High")
-        self.assertEqual(churn_candidate["detected_type"], "Classification")
+        self.assertEqual(churn_candidate["detected_type"], "Binary Classification")
         
         # Price should be regression
         price_candidate = next((c for c in candidates if c["column"] == "price"), None)
@@ -177,6 +177,33 @@ class TargetDetectionEngineTests(unittest.TestCase):
         leakage_candidate = next((c for c in candidates if c["column"] == "post_treatment_effect"), None)
         self.assertIsNotNone(leakage_candidate)
         self.assertTrue(leakage_candidate["leakage_warning"])
+
+    def test_problem_type_detection(self):
+        detector = TargetDetectionEngine(self.profile)
+        
+        # 1. Binary numeric target (e.g. 0/1 integers)
+        self.profile["columns"]["binary_numeric"] = {"inferred_type": "numeric", "unique_count": 2, "pandas_dtype": "int64"}
+        self.assertEqual(detector.determine_problem_type("binary_numeric"), "Binary Classification")
+        
+        # 2. Binary categorical target
+        self.profile["columns"]["binary_cat"] = {"inferred_type": "categorical", "unique_count": 2}
+        self.assertEqual(detector.determine_problem_type("binary_cat"), "Binary Classification")
+        
+        # 3. Multiclass (categorical > 2)
+        self.profile["columns"]["multiclass_cat"] = {"inferred_type": "categorical", "unique_count": 5}
+        self.assertEqual(detector.determine_problem_type("multiclass_cat"), "Multiclass Classification")
+        
+        # 4. Continuous regression
+        self.profile["columns"]["continuous_reg"] = {"inferred_type": "numeric", "unique_count": 100, "pandas_dtype": "float64"}
+        self.assertEqual(detector.determine_problem_type("continuous_reg"), "Regression")
+        
+        # 5. Integer regression (high cardinality integer)
+        self.profile["columns"]["int_reg"] = {"inferred_type": "numeric", "unique_count": 50, "pandas_dtype": "int64"}
+        self.assertEqual(detector.determine_problem_type("int_reg"), "Regression")
+        
+        # 6. Small-cardinality numerical target (integer)
+        self.profile["columns"]["small_int"] = {"inferred_type": "numeric", "unique_count": 10, "pandas_dtype": "int64"}
+        self.assertEqual(detector.determine_problem_type("small_int"), "Multiclass Classification")
 
 from ml_engine.preprocessing_recommendation import PreprocessingRecommendationEngine
 from ml_engine.pipeline_builder import PipelineBuilder

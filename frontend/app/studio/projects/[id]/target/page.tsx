@@ -168,15 +168,22 @@ export default function TargetSelectionPage() {
                       <div className="text-xs text-muted-foreground">Let AI determine classification or regression based on target signature.</div>
                     </div>
                   </label>
-                  <label className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${problemType === 'classification' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted'}`}>
-                    <input type="radio" name="problemType" value="classification" checked={problemType === 'classification'} onChange={(e) => setProblemType(e.target.value)} className="accent-primary w-4 h-4" />
+                  <label className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${problemType === 'Binary Classification' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted'}`}>
+                    <input type="radio" name="problemType" value="Binary Classification" checked={problemType === 'Binary Classification'} onChange={(e) => setProblemType(e.target.value)} className="accent-primary w-4 h-4" />
                     <div>
-                      <div className="font-bold text-sm">Classification</div>
-                      <div className="text-xs text-muted-foreground">Predict a discrete category or class label.</div>
+                      <div className="font-bold text-sm">Binary Classification</div>
+                      <div className="text-xs text-muted-foreground">Predict between exactly two discrete categories.</div>
                     </div>
                   </label>
-                  <label className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${problemType === 'regression' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted'}`}>
-                    <input type="radio" name="problemType" value="regression" checked={problemType === 'regression'} onChange={(e) => setProblemType(e.target.value)} className="accent-primary w-4 h-4" />
+                  <label className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${problemType === 'Multiclass Classification' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted'}`}>
+                    <input type="radio" name="problemType" value="Multiclass Classification" checked={problemType === 'Multiclass Classification'} onChange={(e) => setProblemType(e.target.value)} className="accent-primary w-4 h-4" />
+                    <div>
+                      <div className="font-bold text-sm">Multiclass Classification</div>
+                      <div className="text-xs text-muted-foreground">Predict a discrete category from three or more options.</div>
+                    </div>
+                  </label>
+                  <label className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${problemType === 'Regression' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted'}`}>
+                    <input type="radio" name="problemType" value="Regression" checked={problemType === 'Regression'} onChange={(e) => setProblemType(e.target.value)} className="accent-primary w-4 h-4" />
                     <div>
                       <div className="font-bold text-sm">Regression</div>
                       <div className="text-xs text-muted-foreground">Predict a continuous numerical value.</div>
