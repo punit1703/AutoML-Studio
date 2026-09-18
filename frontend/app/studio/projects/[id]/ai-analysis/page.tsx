@@ -3,22 +3,19 @@
 import * as React from "react";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ArrowRight, BrainCircuit, Check, Edit2 } from "lucide-react";
+import { Loader2, ArrowRight, GitMerge, CheckCircle2, AlertTriangle, ShieldAlert } from "lucide-react";
 import api from "@/lib/api";
 import { useRouter, useParams } from "next/navigation";
 import { useAppContext } from "@/context/AppContext";
-import { motion } from "framer-motion";
 
-export default function AIAnalysisPage() {
+export default function PreprocessingPlanPage() {
   const router = useRouter();
   const params = useParams();
   const projectId = params.id as string;
   const { datasetId } = useAppContext();
   
-  const [analysis, setAnalysis] = useState<any>(null);
+  const [plan, setPlan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [targetColumn, setTargetColumn] = useState<string>("");
-  const [problemTypeOverride, setProblemTypeOverride] = useState<string>("auto");
 
   useEffect(() => {
     if (!datasetId) {
@@ -26,148 +23,129 @@ export default function AIAnalysisPage() {
       return;
     }
 
-    const savedTarget = localStorage.getItem(`target_column_${datasetId}`) || "";
-    const savedProblemType = localStorage.getItem(`problem_type_${datasetId}`) || "auto";
-    
-    setTargetColumn(savedTarget);
-    setProblemTypeOverride(savedProblemType);
-
-    if (!savedTarget) {
-      router.push(`/studio/projects/${projectId}/target`);
-      return;
-    }
-
-    const fetchAnalysis = async () => {
+    const fetchPlan = async () => {
       try {
-        // This triggers Grok recommendation because target_column is provided
-        const res = await api.get(`v1/datasets/${datasetId}/analyze/?target_column=${savedTarget}`);
-        setAnalysis(res.data.ai_recommendation || null);
+        const res = await api.get(`v1/datasets/${datasetId}/preprocessing_plan/`);
+        setPlan(res.data.plan);
       } catch (error) {
-        console.error("Failed to fetch AI analysis", error);
+        console.error("Failed to fetch preprocessing plan", error);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchAnalysis();
-  }, [datasetId, projectId, router]);
+    fetchPlan();
+  }, [datasetId, router]);
 
   const handleBuildPipeline = async () => {
-    // Navigate to the visual Pipeline Builder executor
-    router.push("/studio/pipeline");
+    // Navigate to model training / next step
+    router.push(`/studio/projects/${projectId}/train`);
   };
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
-        <h2 className="text-xl font-bold font-mono">Grok is analyzing your dataset...</h2>
+        <h2 className="text-xl font-bold font-mono">Building Preprocessing Pipeline...</h2>
         <p className="text-muted-foreground text-center max-w-md">
-          Sending dataset characteristics to xAI Grok to determine the optimal preprocessing strategy, candidate models, and problem type.
+          Analyzing column signatures to generate a zero-leakage scikit-learn ColumnTransformer plan.
         </p>
       </div>
     );
   }
 
-  if (!analysis) {
-    return <div className="text-center text-muted-foreground mt-20">Failed to generate AI analysis.</div>;
+  if (!plan) {
+    return <div className="text-center text-muted-foreground mt-20">Failed to generate preprocessing plan. Please ensure target is selected.</div>;
   }
 
-  // Use the override if provided, otherwise the AI's detection
-  const finalProblemType = problemTypeOverride !== 'auto' ? problemTypeOverride : (analysis.problem_type || 'classification');
-
+  const columns = Object.entries(plan);
+  
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-20">
+    <div className="max-w-5xl mx-auto space-y-8 pb-20">
       <div>
         <h1 className="text-3xl font-bold font-mono flex items-center gap-3">
-          <BrainCircuit className="w-8 h-8 text-primary" /> AI Dataset Analysis
+          <GitMerge className="w-8 h-8 text-primary" /> Preprocessing Plan
         </h1>
         <p className="text-muted-foreground mt-2 text-sm">
-          Review and customize Grok's recommended machine learning strategy.
+          Review the automated feature engineering pipeline. This pipeline will be strictly fitted on training data and baked into the final `.pkl` model to prevent data leakage.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-card border-border">
-          <CardContent className="p-6">
-            <div className="text-sm font-medium text-muted-foreground mb-1">Target Column</div>
-            <div className="text-xl font-mono font-bold text-primary">{targetColumn}</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-6">
-            <div className="text-sm font-medium text-muted-foreground mb-1">Problem Type</div>
-            <div className="text-xl font-mono font-bold text-foreground capitalize">
-              {finalProblemType}
-            </div>
-            {problemTypeOverride === 'auto' && (
-              <div className="text-xs text-primary mt-1 flex items-center gap-1">
-                <BrainCircuit className="w-3 h-3" /> Auto-detected by Grok
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <Card className="bg-card border-border">
-          <CardContent className="p-6 space-y-8">
-            
-            {/* Preprocessing */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold font-mono">Recommended Preprocessing</h3>
-                <button className="text-xs text-primary flex items-center gap-1 hover:underline">
-                  <Edit2 className="w-3 h-3" /> Edit
-                </button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {Object.entries(analysis.preprocessing || {}).map(([key, value]: any) => (
-                  <div key={key} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg border border-border">
-                    <Check className="w-4 h-4 text-success mt-0.5 shrink-0" />
-                    <div>
-                      <div className="font-bold text-sm capitalize">{key.replace('_', ' ')}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">{value}</div>
+      <div className="space-y-4">
+        {columns.map(([colName, config]: [string, any]) => {
+          const isTarget = config.type === "target";
+          const isExcluded = config.action === "exclude";
+          const hasWarnings = config.warnings && config.warnings.length > 0;
+          
+          return (
+            <Card key={colName} className={`border ${isTarget ? 'border-primary shadow-[0_0_10px_rgba(56,189,248,0.2)] bg-primary/5' : isExcluded ? 'border-border opacity-60' : 'border-border'}`}>
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-lg font-bold font-mono">{colName}</h3>
+                      <span className={`text-xs px-2 py-0.5 rounded font-bold ${
+                        isTarget ? 'bg-primary/20 text-primary' : 
+                        isExcluded ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {config.type}
+                      </span>
+                      {!isExcluded && !isTarget && (
+                        <span className="text-xs px-2 py-0.5 rounded font-bold bg-success/20 text-success">
+                          Included
+                        </span>
+                      )}
+                      {isExcluded && !isTarget && (
+                        <span className="text-xs px-2 py-0.5 rounded font-bold bg-destructive/20 text-destructive">
+                          Dropped
+                        </span>
+                      )}
                     </div>
+                    
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                      <CheckCircle2 className={`w-4 h-4 ${isExcluded ? 'text-destructive' : 'text-success'}`} />
+                      {config.reason}
+                    </p>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Candidate Models */}
-            <div className="pt-6 border-t border-border">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold font-mono">Candidate Models</h3>
-                <button className="text-xs text-primary flex items-center gap-1 hover:underline">
-                  <Edit2 className="w-3 h-3" /> Edit
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {(analysis.candidate_models || []).map((model: string) => (
-                  <div key={model} className="px-3 py-1.5 bg-primary/10 border border-primary/20 text-primary font-mono text-sm rounded flex items-center gap-2">
-                    <Check className="w-3 h-3" /> {model}
+                  
+                  {!isExcluded && !isTarget && (
+                    <div className="flex gap-2 flex-wrap max-w-xs justify-end">
+                       {config.missing !== 'none' && (
+                         <span className="text-xs bg-secondary px-2 py-1 rounded">Missing: {config.missing}</span>
+                       )}
+                       {config.scaling !== 'none' && (
+                         <span className="text-xs bg-secondary px-2 py-1 rounded">Scale: {config.scaling}</span>
+                       )}
+                       {config.encoding !== 'none' && (
+                         <span className="text-xs bg-secondary px-2 py-1 rounded">Encode: {config.encoding}</span>
+                       )}
+                       {config.action === 'extract_datetime' && (
+                         <span className="text-xs bg-secondary px-2 py-1 rounded">Extract Datetime</span>
+                       )}
+                    </div>
+                  )}
+                </div>
+                
+                {hasWarnings && (
+                  <div className="mt-4 space-y-2">
+                    {config.warnings.map((warning: string, i: number) => {
+                      const isLeakage = warning.toLowerCase().includes("leakage");
+                      return (
+                        <div key={i} className={`text-xs flex items-center gap-2 p-2 rounded border ${
+                          isLeakage ? 'bg-destructive/10 border-destructive text-destructive font-bold' : 'bg-warning/10 border-warning text-warning'
+                        }`}>
+                          {isLeakage ? <ShieldAlert className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+                          {warning}
+                        </div>
+                      )
+                    })}
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Visualizations */}
-            <div className="pt-6 border-t border-border">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold font-mono">Visualizations to Generate</h3>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {(analysis.visualizations || []).map((viz: string) => (
-                  <div key={viz} className="px-3 py-1.5 bg-secondary border border-border text-foreground font-mono text-sm rounded flex items-center gap-2">
-                    <Check className="w-3 h-3 text-muted-foreground" /> {viz}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-          </CardContent>
-        </Card>
-      </motion.div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
 
       <div className="flex justify-end pt-4 border-t border-border">
         <button

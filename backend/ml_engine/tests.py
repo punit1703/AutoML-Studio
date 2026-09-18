@@ -178,3 +178,124 @@ class TargetDetectionEngineTests(unittest.TestCase):
         self.assertIsNotNone(leakage_candidate)
         self.assertTrue(leakage_candidate["leakage_warning"])
 
+from ml_engine.preprocessing_recommendation import PreprocessingRecommendationEngine
+from ml_engine.pipeline_builder import PipelineBuilder
+
+class PreprocessingEngineTests(unittest.TestCase):
+    def setUp(self):
+        self.profile = {
+            "dataset": {},
+            "columns": {
+                "user_id": {
+                    "inferred_type": "numeric",
+                    "unique_count": 100,
+                    "is_identifier": True
+                },
+                "age": {
+                    "inferred_type": "numeric",
+                    "unique_count": 10,
+                    "missing_pct": 5.0,
+                    "skewness": 2.5
+                },
+                "salary": {
+                    "inferred_type": "numeric",
+                    "unique_count": 10,
+                    "missing_pct": 0.0,
+                    "skewness": 0.5
+                },
+                "city": {
+                    "inferred_type": "categorical",
+                    "unique_count": 5,
+                    "missing_pct": 10.0
+                },
+                "country": {
+                    "inferred_type": "categorical",
+                    "unique_count": 50
+                },
+                "is_active": {
+                    "inferred_type": "boolean",
+                    "unique_count": 2
+                },
+                "created_at": {
+                    "inferred_type": "datetime",
+                    "unique_count": 10
+                },
+                "comments": {
+                    "inferred_type": "text",
+                    "unique_count": 10
+                },
+                "constant_col": {
+                    "inferred_type": "numeric",
+                    "unique_count": 1
+                },
+                "target": {
+                    "inferred_type": "categorical",
+                    "unique_count": 2
+                }
+            }
+        }
+        self.target_column = "target"
+        
+    def test_recommendation_engine(self):
+        engine = PreprocessingRecommendationEngine(self.profile, self.target_column)
+        plan = engine.generate_plan()
+        
+        # Check target is excluded
+        self.assertEqual(plan["target"]["action"], "exclude")
+        
+        # Check identifier is excluded
+        self.assertEqual(plan["user_id"]["action"], "exclude")
+        
+        # Check constant is excluded
+        self.assertEqual(plan["constant_col"]["action"], "exclude")
+        
+        # Check skewed numeric uses robust scaler and median imputation
+        self.assertEqual(plan["age"]["scaling"], "robust")
+        self.assertEqual(plan["age"]["missing"], "median")
+        
+        # Check normal numeric uses standard scaler
+        self.assertEqual(plan["salary"]["scaling"], "standard")
+        
+        # Check low cardinality categorical uses one_hot
+        self.assertEqual(plan["city"]["encoding"], "one_hot")
+        self.assertEqual(plan["city"]["missing"], "most_frequent")
+        
+        # Check high cardinality categorical uses target/ordinal encoding
+        self.assertEqual(plan["country"]["encoding"], "target")
+        
+        # Check datetime
+        self.assertEqual(plan["created_at"]["action"], "extract_datetime")
+        
+        # Check text
+        self.assertEqual(plan["comments"]["encoding"], "tfidf")
+        
+    def test_pipeline_builder(self):
+        engine = PreprocessingRecommendationEngine(self.profile, self.target_column)
+        plan = engine.generate_plan()
+        
+        builder = PipelineBuilder(plan)
+        preprocessor = builder.build_pipeline()
+        
+        # Create a mock dataframe
+        df = pd.DataFrame({
+            "user_id": range(10),
+            "age": [20, 25, np.nan, 30, 35, 40, 45, 50, 55, 60],
+            "salary": [50000, 60000, 70000, 80000, 90000, 100000, 110000, 120000, 130000, 140000],
+            "city": ["NY", "LA", "NY", None, "SF", "LA", "NY", "SF", "LA", "NY"],
+            "country": [str(i) for i in range(10)],
+            "is_active": [True, False] * 5,
+            "created_at": pd.date_range("2023-01-01", periods=10),
+            "comments": ["Good", "Bad", "Okay", "Great", "Terrible", "Fine", "Awful", "Amazing", "Decent", "Poor"],
+            "constant_col": [1] * 10
+        })
+        
+        # Fit transform should work without target
+        X_trans = preprocessor.fit_transform(df)
+        
+        # Should not crash and should return a numpy array
+        self.assertTrue(isinstance(X_trans, np.ndarray))
+        
+        # Shape should reflect transformations (one-hot encoding expands columns, datetime expands to 4, tfidf adds up to 100)
+        self.assertGreater(X_trans.shape[1], df.shape[1])
+
+

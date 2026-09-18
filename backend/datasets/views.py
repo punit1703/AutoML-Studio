@@ -122,6 +122,23 @@ class DatasetViewSet(viewsets.ModelViewSet):
             "problem_type": dataset.metadata['problem_type']
         }, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['get'])
+    def preprocessing_plan(self, request, pk=None):
+        dataset = self.get_object()
+        
+        if not dataset.metadata or 'columns' not in dataset.metadata:
+            return Response({"error": "Dataset profile not generated"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        target_column = dataset.metadata.get('target_column')
+        if not target_column:
+            return Response({"error": "Target column not set"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        from ml_engine.preprocessing_recommendation import PreprocessingRecommendationEngine
+        engine = PreprocessingRecommendationEngine(dataset.metadata, target_column)
+        plan = engine.generate_plan()
+        
+        return Response({"plan": plan}, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['post'])
     def run_pipeline(self, request, pk=None):
         dataset = self.get_object()
