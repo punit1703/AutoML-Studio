@@ -182,23 +182,46 @@ export default function PipelineBuilderPage() {
             <div className="w-20 h-20 bg-success rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(34,197,94,0.5)]">
               <CheckCircle2 className="w-10 h-10 text-background" />
             </div>
-            <h2 className="text-3xl font-bold text-foreground mb-2 font-mono">Pipeline Completed</h2>
-            <p className="text-success max-w-lg mx-auto mb-6">
-              Your AutoML pipeline is ready. Below are your empirical results and downloadable artifacts.
+            <h2 className="text-3xl font-bold text-foreground mb-2 font-mono uppercase tracking-wider">Model Ready</h2>
+            <p className="text-success max-w-lg mx-auto mb-8">
+              Your production-ready AutoML pipeline has been generated successfully.
             </p>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 text-left max-w-3xl mx-auto">
+              <div className="bg-background rounded p-4 border border-border">
+                <p className="text-xs text-muted-foreground uppercase mb-1 font-bold">Model</p>
+                <p className="font-mono text-sm font-bold text-primary truncate" title={deploymentResult.best_model?.name}>{deploymentResult.best_model?.name}</p>
+              </div>
+              <div className="bg-background rounded p-4 border border-border">
+                <p className="text-xs text-muted-foreground uppercase mb-1 font-bold">Target</p>
+                <p className="font-mono text-sm font-bold truncate">{targetColumn}</p>
+              </div>
+              <div className="bg-background rounded p-4 border border-border">
+                <p className="text-xs text-muted-foreground uppercase mb-1 font-bold">Primary Metric</p>
+                <p className="font-mono text-sm font-bold truncate">
+                  {deploymentResult.best_model?.metrics?.primary_metric?.toUpperCase()} = {deploymentResult.best_model?.metrics?.primary_score?.toFixed(4)}
+                </p>
+              </div>
+              <div className="bg-background rounded p-4 border border-border">
+                <p className="text-xs text-muted-foreground uppercase mb-1 font-bold">Training Time</p>
+                <p className="font-mono text-sm font-bold truncate">
+                  {deploymentResult.models_evaluated?.find((m: any) => m.model_name === deploymentResult.best_model?.name)?.training_time?.toFixed(1) || "<1"}s
+                </p>
+              </div>
+            </div>
             
             <div className="flex gap-4 justify-center items-center">
               <button 
                 onClick={() => downloadFile(`v1/datasets/${datasetId}/download_model/?model_name=pipeline`, 'pipeline.pkl')}
-                className="px-4 py-2 bg-primary/20 border border-primary text-primary font-bold rounded flex items-center gap-2 hover:bg-primary/30 transition-colors text-sm"
+                className="px-8 py-4 bg-primary text-primary-foreground font-bold rounded-lg flex items-center gap-3 hover:bg-primary/90 transition-all text-lg shadow-lg hover:shadow-primary/50"
               >
-                <Star className="w-4 h-4" /> Download Model
+                <Rocket className="w-5 h-5" /> Download .pkl
               </button>
               <button 
-                onClick={() => downloadFile(`v1/datasets/${datasetId}/download_notebook/`, 'reproducible_pipeline.ipynb')}
-                className="px-4 py-2 bg-secondary/20 border border-secondary text-secondary font-bold rounded flex items-center gap-2 hover:bg-secondary/30 transition-colors text-sm"
+                onClick={() => downloadFile(`v1/datasets/${datasetId}/download_metadata/`, 'pipeline_metadata.json')}
+                className="px-4 py-4 bg-secondary/20 border border-secondary text-secondary font-bold rounded-lg flex items-center gap-2 hover:bg-secondary/30 transition-colors"
               >
-                <Globe className="w-4 h-4" /> Export Notebook
+                Download Metadata
               </button>
             </div>
           </div>

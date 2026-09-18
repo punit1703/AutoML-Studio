@@ -251,6 +251,23 @@ class DatasetViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def download_report(self, request, pk=None):
         dataset = self.get_object()
-        file_path = DatasetService.get_report_path(dataset)
-        return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=os.path.basename(file_path))
+        try:
+            file_path = DatasetService.get_report_path(dataset)
+            response = FileResponse(open(file_path, 'rb'), as_attachment=True, filename='automl_evaluation_report.pdf')
+            return response
+        except ValidationError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @action(detail=True, methods=['get'])
+    def download_metadata(self, request, pk=None):
+        dataset = self.get_object()
+        try:
+            file_path = os.path.join(settings.MEDIA_ROOT, 'models', str(dataset.id), 'pipeline_metadata.json')
+            if not os.path.exists(file_path):
+                return Response({"error": "Metadata not found."}, status=status.HTTP_404_NOT_FOUND)
+            response = FileResponse(open(file_path, 'rb'), as_attachment=True, filename='pipeline_metadata.json')
+            return response
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

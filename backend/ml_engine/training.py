@@ -340,8 +340,29 @@ class ModelTrainingEngine:
         # Save ONLY the best model
         model_filename = f"pipeline.pkl"
         model_path = os.path.join(self.model_save_dir, model_filename)
+        
+        metadata_filename = f"pipeline_metadata.json"
+        metadata_path = os.path.join(self.model_save_dir, metadata_filename)
+
         if best_overall_model:
             joblib.dump(best_overall_model, model_path)
+            
+            import json
+            from datetime import datetime
+            
+            metadata = {
+                "model_name": best_model_name,
+                "problem_type": self.problem_type,
+                "target_column": self.target_column,
+                "feature_columns": features_schema,
+                "training_dataset_rows": self.X.shape[0] if hasattr(self, 'X') else 0,
+                "primary_metric": best_model_metrics.get("primary_metric", ""),
+                "primary_score": best_model_metrics.get("primary_score", None),
+                "preprocessing_version": "1.0",
+                "creation_timestamp": datetime.utcnow().isoformat()
+            }
+            with open(metadata_path, 'w') as f:
+                json.dump(metadata, f, indent=4)
             
         relative_path = os.path.join(os.path.basename(os.path.dirname(self.model_save_dir)), os.path.basename(self.model_save_dir), model_filename).replace("\\", "/")
 

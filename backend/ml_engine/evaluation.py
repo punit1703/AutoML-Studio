@@ -106,7 +106,7 @@ class ModelEvaluator:
         y_pred = model.predict(X_test)
         
         # Multiclass vs Binary
-        is_multiclass = len(self.label_classes) > 2 if self.label_classes else len(np.unique(y_test)) > 2
+        is_multiclass = len(self.label_classes) > 2 if self.label_classes is not None else len(np.unique(y_test)) > 2
         avg_type = 'weighted' if is_multiclass else 'binary'
         
         acc = accuracy_score(y_test, y_pred)
@@ -156,7 +156,7 @@ class ModelEvaluator:
         # Confusion Matrix
         cm = confusion_matrix(y_test, y_pred)
         diagnostics["confusion_matrix"] = cm.tolist()
-        if self.label_classes:
+        if self.label_classes is not None:
             diagnostics["classes"] = list(self.label_classes)
             
         diagnostics["feature_importance"] = self._extract_feature_importance(model, X_test)

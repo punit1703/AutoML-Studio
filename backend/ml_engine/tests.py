@@ -505,3 +505,65 @@ class ModelExplainerTests(unittest.TestCase):
         self.assertIsNotNone(summary)
         self.assertEqual(summary[0][0], "f1")
         self.assertEqual(summary[0][1], 0.8)
+
+from ml_engine.training import ModelTrainingEngine
+import joblib
+import json
+
+class ModelArtifactTests(unittest.TestCase):
+    def setUp(self):
+        self.output_dir = tempfile.mkdtemp()
+        
+    def tearDown(self):
+        shutil.rmtree(self.output_dir)
+        
+    def test_export_and_load_artifact(self):
+        # 1. Train model
+        # Create enough rows for 5-fold CV
+        df = pd.DataFrame({
+            'feature1': [1.1, 2.2, 3.3, 4.4, 5.5, 6.6] * 5,
+            'feature2': ['A', 'B', 'A', 'B', 'A', 'A'] * 5,
+            'target': [0, 1, 0, 1, 0, 0] * 5
+        })
+        
+        plan = {
+            'feature1': {'type': 'numeric', 'imputation': 'median', 'scaling': 'standard'},
+            'feature2': {'type': 'categorical', 'imputation': 'most_frequent', 'encoding': 'onehot'}
+        }
+        
+        engine = ModelTrainingEngine(
+            df=df,
+            target_column='target',
+            model_save_dir=self.output_dir,
+            problem_type='Binary Classification',
+            preprocessing_plan=plan,
+            budget='fast'
+        )
+        
+        results = engine.train_and_evaluate()
+        self.assertTrue('pipeline.pkl' in results['best_model']['absolute_path'])
+        
+        # 2. Verify metadata json exists
+        metadata_path = os.path.join(self.output_dir, 'pipeline_metadata.json')
+        self.assertTrue(os.path.exists(metadata_path))
+        
+        with open(metadata_path, 'r') as f:
+            metadata = json.load(f)
+            
+        self.assertEqual(metadata['target_column'], 'target')
+        self.assertEqual(metadata['problem_type'], 'Binary Classification')
+        self.assertIn('primary_metric', metadata)
+        
+        # 3. Load .pkl in a clean python process simulation
+        loaded_pipeline = joblib.load(results['best_model']['absolute_path'])
+        
+        # 4. Pass unseen raw input
+        raw_input = pd.DataFrame({
+            'feature1': [7.7],
+            'feature2': ['B']
+        })
+        
+        # 5. Generate predictions
+        predictions = loaded_pipeline.predict(raw_input)
+        self.assertEqual(len(predictions), 1)
+        self.assertIn(predictions[0], [0, 1])
