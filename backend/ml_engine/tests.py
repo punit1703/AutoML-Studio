@@ -432,3 +432,76 @@ class ModelTrainingEngineBudgetTests(unittest.TestCase):
         
         for m in results['models_evaluated']:
             self.assertIn(m['status'], ['success', 'error'])
+
+
+from ml_engine.evaluation import ModelEvaluator
+from sklearn.linear_model import LogisticRegression, LinearRegression
+
+class ModelEvaluatorTests(unittest.TestCase):
+    def test_classification_evaluation(self):
+        X = np.array([[1, 2], [2, 3], [3, 4], [4, 5]])
+        y = np.array([0, 0, 1, 1])
+        model = LogisticRegression().fit(X, y)
+        
+        evaluator = ModelEvaluator("Binary Classification")
+        res = evaluator.evaluate(model, X, y)
+        
+        self.assertEqual(res["primary_metric"], "accuracy")
+        self.assertEqual(res["primary_score"], 1.0)
+        self.assertIn("roc_auc", res["metrics"])
+        self.assertIn("confusion_matrix", res["diagnostics"])
+        
+    def test_regression_evaluation(self):
+        X = np.array([[1], [2], [3], [4]])
+        y = np.array([2, 4, 6, 8])
+        model = LinearRegression().fit(X, y)
+        
+        evaluator = ModelEvaluator("Regression")
+        res = evaluator.evaluate(model, X, y)
+        
+        self.assertEqual(res["primary_metric"], "r2")
+        self.assertAlmostEqual(res["primary_score"], 1.0)
+        self.assertIn("rmse", res["metrics"])
+        self.assertIn("actual_vs_predicted", res["diagnostics"])
+        
+    def test_imbalanced_classification(self):
+        X = np.array([[1], [2], [3], [4], [5], [6]])
+        y = np.array([0, 0, 0, 0, 0, 1])
+        model = LogisticRegression().fit(X, y)
+        
+        evaluator = ModelEvaluator("Binary Classification")
+        res = evaluator.evaluate(model, X, y)
+        
+        # Imbalanced (5:1 ratio), so F1 should be primary metric
+        self.assertEqual(res["primary_metric"], "f1")
+
+from ml_engine.explainability import ModelExplainer
+from sklearn.ensemble import RandomForestClassifier
+
+class ModelExplainerTests(unittest.TestCase):
+    def test_shap_explanation(self):
+        X = np.array([[1, 2], [2, 3], [3, 4], [4, 5]])
+        y = np.array([0, 0, 1, 1])
+        model = RandomForestClassifier(n_estimators=10, random_state=42).fit(X, y)
+        
+        explainer = ModelExplainer(model, X, feature_names=["f1", "f2"])
+        summary = explainer.explain()
+        
+        self.assertIsNotNone(summary)
+        self.assertTrue(len(summary) > 0)
+        self.assertEqual(len(summary[0]), 2) # feature name, score
+        
+    def test_fallback_explanation(self):
+        # A mock model that doesn't support SHAP directly without crashing or falling back
+        class MockModel:
+            def predict(self, X): pass
+            
+        model = MockModel()
+        model.feature_importances_ = np.array([0.8, 0.2])
+        
+        explainer = ModelExplainer(model, np.array([[1, 2]]), feature_names=["f1", "f2"])
+        summary = explainer.explain()
+        
+        self.assertIsNotNone(summary)
+        self.assertEqual(summary[0][0], "f1")
+        self.assertEqual(summary[0][1], 0.8)

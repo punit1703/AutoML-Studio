@@ -13,7 +13,7 @@ from ml_engine.analysis import DatasetAnalysisEngine
 from ml_engine.preprocessing import DataPreprocessingEngine
 from ml_engine.visualization import VisualizationEngine
 from ml_engine.training import ModelTrainingEngine
-from ml_engine.evaluation import ModelEvaluationEngine
+from ml_engine.evaluation import ModelEvaluator
 from ml_engine.notebook_generation import NotebookGenerator
 from ml_engine.report_generation import ReportGenerator
 from ml_engine.utils import read_dataframe
@@ -515,7 +515,8 @@ class DatasetService:
             training_engine = ModelTrainingEngine(df, target_column, output_dir, problem_type=problem_type, preprocessing_plan=preprocessing_plan, dataset_profile=dataset.metadata)
             _, X_test, _, y_test = training_engine._prepare_data(problem_type)
             
-            models = {}
+            models_results = {}
+            eval_engine = ModelEvaluator(problem_type)
             for model_path in glob.glob(os.path.join(output_dir, "*.pkl")) + glob.glob(os.path.join(output_dir, "*.joblib")):
                 model_name = os.path.basename(model_path).replace('.pkl', '').replace('.joblib', '').replace('_', ' ').title()
                 if model_name.lower() == 'xgboost':
@@ -524,13 +525,14 @@ class DatasetService:
                     model_name = 'SVM'
                 elif model_name.lower() == 'knn':
                     model_name = 'KNN'
-                models[model_name] = joblib.load(model_path)
                 
-            if not models:
+                model = joblib.load(model_path)
+                models_results[model_name] = eval_engine.evaluate(model, X_test, y_test)
+                
+            if not models_results:
                 raise ValidationError("No saved models found. Please train models first.")
                 
-            eval_engine = ModelEvaluationEngine(problem_type, models, X_test, y_test)
-            return eval_engine.evaluate()
+            return models_results
         except Exception as e:
             raise ValidationError(f"Error evaluating models: {str(e)}")
 

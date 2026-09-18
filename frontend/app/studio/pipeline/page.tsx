@@ -9,6 +9,7 @@ import api, { downloadFile } from "@/lib/api";
 import { 
   CheckCircle2, Loader2, Rocket, Star, Link as LinkIcon, Globe, AlertTriangle
 } from "lucide-react";
+import EvaluationDashboard from "@/components/studio/evaluation-dashboard";
 
 export default function PipelineBuilderPage() {
   const router = useRouter();
@@ -182,91 +183,27 @@ export default function PipelineBuilderPage() {
               <CheckCircle2 className="w-10 h-10 text-background" />
             </div>
             <h2 className="text-3xl font-bold text-foreground mb-2 font-mono">Pipeline Completed</h2>
-            <p className="text-success max-w-lg mx-auto">
+            <p className="text-success max-w-lg mx-auto mb-6">
               Your AutoML pipeline is ready. Below are your empirical results and downloadable artifacts.
             </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-card border border-border p-6 rounded-xl space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-lg flex items-center gap-2">
-                  <Star className="w-5 h-5 text-primary" /> Winning Model: <span className="font-mono text-primary bg-primary/10 px-2 rounded">{deploymentResult.best_model.name}</span>
-                </h3>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                {Object.entries(deploymentResult.best_model.metrics).filter(([key]) => key !== 'cv_scores').map(([key, value]) => (
-                  <div key={key} className="bg-muted/50 p-4 rounded-lg border border-border text-center">
-                    <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">{key.replace('_', ' ')}</div>
-                    <div className="text-xl font-bold font-mono text-foreground">
-                      {typeof value === 'number' ? value.toFixed(4) : value as string}
-                    </div>
-                  </div>
-                ))}
-              </div>
+            
+            <div className="flex gap-4 justify-center items-center">
               <button 
-                onClick={() => router.push(`/studio/experiments`)}
-                className="w-full py-3 text-sm text-primary hover:bg-primary/5 rounded-md border border-primary/20 transition-colors font-medium"
+                onClick={() => downloadFile(`v1/datasets/${datasetId}/download_model/?model_name=pipeline`, 'pipeline.pkl')}
+                className="px-4 py-2 bg-primary/20 border border-primary text-primary font-bold rounded flex items-center gap-2 hover:bg-primary/30 transition-colors text-sm"
               >
-                View Full Model Comparison
+                <Star className="w-4 h-4" /> Download Model
+              </button>
+              <button 
+                onClick={() => downloadFile(`v1/datasets/${datasetId}/download_notebook/`, 'reproducible_pipeline.ipynb')}
+                className="px-4 py-2 bg-secondary/20 border border-secondary text-secondary font-bold rounded flex items-center gap-2 hover:bg-secondary/30 transition-colors text-sm"
+              >
+                <Globe className="w-4 h-4" /> Export Notebook
               </button>
             </div>
-
-            <div className="bg-card border border-border p-6 rounded-xl space-y-6 flex flex-col justify-center">
-              <h3 className="font-semibold text-lg flex items-center gap-2 mb-2">
-                <Rocket className="w-5 h-5 text-primary" /> Download Artifacts
-              </h3>
-              <div className="space-y-4">
-                <button 
-                  onClick={() => downloadFile(`v1/datasets/${datasetId}/download_model/?model_name=pipeline`, 'pipeline.pkl')}
-                  className="w-full p-4 bg-primary/10 border border-primary/30 rounded-lg flex items-center justify-between hover:bg-primary/20 transition-colors group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/20 rounded-md group-hover:scale-110 transition-transform">
-                      <Star className="w-5 h-5 text-primary" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-bold text-foreground">Pipeline Model (.pkl)</div>
-                      <div className="text-xs text-muted-foreground">Production-ready scikit-learn pipeline</div>
-                    </div>
-                  </div>
-                  <LinkIcon className="w-5 h-5 text-primary" />
-                </button>
-                
-                <button 
-                  onClick={() => downloadFile(`v1/datasets/${datasetId}/download_notebook/`, 'reproducible_pipeline.ipynb')}
-                  className="w-full p-4 bg-secondary/10 border border-secondary/30 rounded-lg flex items-center justify-between hover:bg-secondary/20 transition-colors group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-secondary/20 rounded-md group-hover:scale-110 transition-transform">
-                      <Globe className="w-5 h-5 text-secondary" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-bold text-foreground">Reproducible Notebook (.ipynb)</div>
-                      <div className="text-xs text-muted-foreground">Jupyter notebook with complete code</div>
-                    </div>
-                  </div>
-                  <LinkIcon className="w-5 h-5 text-secondary" />
-                </button>
-                
-                <button 
-                  onClick={() => downloadFile(`v1/datasets/${datasetId}/download_report/`, 'automl_evaluation_report.pdf')}
-                  className="w-full p-4 bg-success/10 border border-success/30 rounded-lg flex items-center justify-between hover:bg-success/20 transition-colors group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-success/20 rounded-md group-hover:scale-110 transition-transform">
-                      <CheckCircle2 className="w-5 h-5 text-success" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-bold text-foreground">Evaluation Report (.pdf)</div>
-                      <div className="text-xs text-muted-foreground">Comprehensive performance metrics</div>
-                    </div>
-                  </div>
-                  <LinkIcon className="w-5 h-5 text-success" />
-                </button>
-              </div>
-            </div>
           </div>
+
+          <EvaluationDashboard result={deploymentResult} />
         </motion.div>
       )}
     </div>

@@ -1,136 +1,169 @@
 import numpy as np
-import pandas as pd
 from sklearn.metrics import (
-    mean_absolute_error, mean_squared_error, r2_score,
     accuracy_score, precision_score, recall_score, f1_score,
-    confusion_matrix, roc_curve, auc, precision_recall_curve
+    roc_curve, auc, confusion_matrix,
+    mean_squared_error, mean_absolute_error, r2_score
 )
-import time
+from imblearn.metrics import geometric_mean_score
 
-class ModelEvaluationEngine:
-    def __init__(self, problem_type: str, models: dict, X_test: pd.DataFrame, y_test: pd.Series):
+class ModelEvaluator:
+    """
+    Evaluates machine learning models and produces a consistent schema of 
+    metrics, primary metric selection, and visual diagnostic arrays.
+    """
+    
+    def __init__(self, problem_type: str, label_classes=None):
         self.problem_type = problem_type
-        self.models = models
-        self.X_test = X_test
-        self.y_test = y_test
-
-    def _extract_feature_importance(self, model, feature_names):
-        importances = None
-        if hasattr(model, 'feature_importances_'):
-            importances = model.feature_importances_
-        elif hasattr(model, 'coef_'):
-            importances = np.abs(model.coef_)
-            if len(importances.shape) > 1:
-                importances = importances.mean(axis=0)
-                
-        if importances is not None and len(importances) == len(feature_names):
-            feature_imp = list(zip(feature_names, importances.tolist()))
-            feature_imp.sort(key=lambda x: x[1], reverse=True)
-            return dict(feature_imp[:10])
-        return None
-
-    def evaluate(self):
-        results = []
-        feature_names = self.X_test.columns.tolist()
+        self.label_classes = label_classes
+        self.is_regression = problem_type == "Regression"
         
-        for name, model in self.models.items():
-            start_time = time.time()
-            y_pred = model.predict(self.X_test)
-            inference_time = time.time() - start_time
-            
-            feature_importance = self._extract_feature_importance(model, feature_names)
-            
-            metrics = {}
-            if self.problem_type == 'regression':
-                mae = mean_absolute_error(self.y_test, y_pred)
-                rmse = np.sqrt(mean_squared_error(self.y_test, y_pred))
-                r2 = r2_score(self.y_test, y_pred)
-                
-                metrics = {
-                    'mae': float(mae),
-                    'rmse': float(rmse),
-                    'r2': float(r2)
-                }
-            else:
-                acc = accuracy_score(self.y_test, y_pred)
-                precision = precision_score(self.y_test, y_pred, average='weighted', zero_division=0)
-                recall = recall_score(self.y_test, y_pred, average='weighted', zero_division=0)
-                f1 = f1_score(self.y_test, y_pred, average='weighted', zero_division=0)
-                
-                cm = confusion_matrix(self.y_test, y_pred).tolist()
-                
-                roc_data = None
-                pr_data = None
-                
-                unique_classes = np.unique(self.y_test)
-                if len(unique_classes) == 2 and hasattr(model, 'predict_proba'):
-                    try:
-                        y_prob = model.predict_proba(self.X_test)[:, 1]
-                        
-                        fpr, tpr, _ = roc_curve(self.y_test, y_prob)
-                        roc_auc = auc(fpr, tpr)
-                        roc_data = {
-                            'fpr': fpr.tolist(),
-                            'tpr': tpr.tolist(),
-                            'auc': float(roc_auc)
-                        }
-                        
-                        prec, rec, _ = precision_recall_curve(self.y_test, y_prob)
-                        pr_data = {
-                            'precision': prec.tolist(),
-                            'recall': rec.tolist()
-                        }
-                    except Exception:
-                        pass
-                    
-                metrics = {
-                    'accuracy': float(acc),
-                    'precision': float(precision),
-                    'recall': float(recall),
-                    'f1': float(f1),
-                    'confusion_matrix': cm
-                }
-                if roc_data:
-                    metrics['roc'] = roc_data
-                if pr_data:
-                    metrics['pr_curve'] = pr_data
-                    
-            results.append({
-                'model_name': name,
-                'metrics': metrics,
-                'inference_time': round(inference_time, 4),
-                'feature_importance': feature_importance
-            })
-            
-        if self.problem_type == 'regression':
-            max_r2 = max(r['metrics']['r2'] for r in results) if results else 1
-            min_time = min(r['inference_time'] for r in results) if results else 1
-            
-            for r in results:
-                time_score = (min_time / max(r['inference_time'], 0.0001))
-                r2_score_val = r['metrics']['r2'] / max_r2 if max_r2 > 0 else 0
-                r['combined_score'] = (r2_score_val * 0.8) + (time_score * 0.2)
-                
-            results.sort(key=lambda x: x.get('combined_score', 0), reverse=True)
-            reason = "Provides the best balance of high R2 score and low prediction latency."
+    def evaluate(self, model, X_test, y_test):
+        if self.is_regression:
+            return self._evaluate_regression(model, X_test, y_test)
         else:
-            max_f1 = max(r['metrics']['f1'] for r in results) if results else 1
-            min_time = min(r['inference_time'] for r in results) if results else 1
+            return self._evaluate_classification(model, X_test, y_test)
             
-            for r in results:
-                time_score = (min_time / max(r['inference_time'], 0.0001))
-                f1_score_val = r['metrics']['f1'] / max_f1 if max_f1 > 0 else 0
-                r['combined_score'] = (f1_score_val * 0.8) + (time_score * 0.2)
+    def _extract_feature_importance(self, model, X_test):
+        importances = []
+        try:
+            # If the model is a pipeline, get the final estimator
+            estimator = model.steps[-1][1] if hasattr(model, 'steps') else model
+            
+            # Trees
+            if hasattr(estimator, 'feature_importances_'):
+                importances = estimator.feature_importances_.tolist()
+            # Linear models
+            elif hasattr(estimator, 'coef_'):
+                coefs = estimator.coef_
+                if len(coefs.shape) > 1:
+                    # Multiclass, take mean absolute coef across classes
+                    importances = np.mean(np.abs(coefs), axis=0).tolist()
+                else:
+                    importances = np.abs(coefs).tolist()
+                    
+            if not importances:
+                return None
                 
-            results.sort(key=lambda x: x.get('combined_score', 0), reverse=True)
-            reason = "Provides the best balance of high F1 Score and low prediction latency."
+            # Try to get feature names if the previous step is a preprocessor
+            feature_names = []
+            if hasattr(model, 'steps') and len(model.steps) > 1:
+                preprocessor = model.steps[0][1]
+                if hasattr(preprocessor, 'get_feature_names_out'):
+                    feature_names = preprocessor.get_feature_names_out().tolist()
+                    
+            # Fallback names
+            if len(feature_names) != len(importances):
+                feature_names = [f"Feature {i}" for i in range(len(importances))]
+                
+            # Pair them and sort
+            paired = list(zip(feature_names, importances))
+            paired.sort(key=lambda x: x[1], reverse=True)
             
-        for i, res in enumerate(results):
-            res['rank'] = i + 1
-            
+            # Return top 20
+            return paired[:20]
+        except Exception as e:
+            return None
+
+    def _evaluate_regression(self, model, X_test, y_test):
+        y_pred = model.predict(X_test)
+        
+        mse = mean_squared_error(y_test, y_pred)
+        rmse = np.sqrt(mse)
+        mae = mean_absolute_error(y_test, y_pred)
+        r2 = r2_score(y_test, y_pred)
+        
+        # Primary Metric
+        primary_metric = "r2"
+        primary_score = r2
+        
+        # Diagnostics
+        # Limit to 500 points for frontend scatter plot
+        sample_size = min(len(y_test), 500)
+        idx = np.random.choice(len(y_test), sample_size, replace=False) if len(y_test) > sample_size else np.arange(len(y_test))
+        
+        actual_vs_predicted = [
+            {"actual": float(a), "predicted": float(p), "residual": float(a - p)} 
+            for a, p in zip(np.array(y_test)[idx], np.array(y_pred)[idx])
+        ]
+        
+        feature_importance = self._extract_feature_importance(model, X_test)
+        
         return {
-            'problem_type': self.problem_type,
-            'evaluation_results': results,
-            'best_model': results[0]['model_name'] if results else None,
-            'recommendation_reason': reason if results else None
+            "primary_metric": primary_metric,
+            "primary_score": float(primary_score),
+            "metrics": {
+                "rmse": float(rmse),
+                "mae": float(mae),
+                "r2": float(r2)
+            },
+            "diagnostics": {
+                "actual_vs_predicted": actual_vs_predicted,
+                "feature_importance": feature_importance
+            }
+        }
+
+    def _evaluate_classification(self, model, X_test, y_test):
+        y_pred = model.predict(X_test)
+        
+        # Multiclass vs Binary
+        is_multiclass = len(self.label_classes) > 2 if self.label_classes else len(np.unique(y_test)) > 2
+        avg_type = 'weighted' if is_multiclass else 'binary'
+        
+        acc = accuracy_score(y_test, y_pred)
+        prec = precision_score(y_test, y_pred, average=avg_type, zero_division=0)
+        rec = recall_score(y_test, y_pred, average=avg_type, zero_division=0)
+        f1 = f1_score(y_test, y_pred, average=avg_type, zero_division=0)
+        
+        # Calculate imbalance
+        class_counts = np.bincount(y_test) if np.issubdtype(np.array(y_test).dtype, np.integer) else np.unique(y_test, return_counts=True)[1]
+        is_imbalanced = np.max(class_counts) / np.sum(class_counts) > 0.8
+        
+        if is_imbalanced:
+            primary_metric = "f1"
+            primary_score = f1
+        else:
+            primary_metric = "accuracy"
+            primary_score = acc
+            
+        metrics = {
+            "accuracy": float(acc),
+            "precision": float(prec),
+            "recall": float(rec),
+            "f1": float(f1)
+        }
+        
+        # ROC AUC
+        diagnostics = {}
+        if hasattr(model, "predict_proba"):
+            try:
+                y_prob = model.predict_proba(X_test)
+                if not is_multiclass:
+                    y_prob_positive = y_prob[:, 1]
+                    fpr, tpr, _ = roc_curve(y_test, y_prob_positive)
+                    roc_auc = auc(fpr, tpr)
+                    metrics["roc_auc"] = float(roc_auc)
+                    
+                    # Store 50 points for ROC curve plotting
+                    if len(fpr) > 50:
+                        idx = np.linspace(0, len(fpr)-1, 50, dtype=int)
+                        fpr = fpr[idx]
+                        tpr = tpr[idx]
+                        
+                    diagnostics["roc_curve"] = [{"fpr": float(f), "tpr": float(t)} for f, t in zip(fpr, tpr)]
+            except Exception:
+                pass
+                
+        # Confusion Matrix
+        cm = confusion_matrix(y_test, y_pred)
+        diagnostics["confusion_matrix"] = cm.tolist()
+        if self.label_classes:
+            diagnostics["classes"] = list(self.label_classes)
+            
+        diagnostics["feature_importance"] = self._extract_feature_importance(model, X_test)
+        
+        return {
+            "primary_metric": primary_metric,
+            "primary_score": float(primary_score),
+            "metrics": metrics,
+            "diagnostics": diagnostics
         }

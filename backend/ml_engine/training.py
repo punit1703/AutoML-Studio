@@ -196,6 +196,9 @@ class ModelTrainingEngine:
         else:
             cv_splitter = StratifiedKFold(n_splits=cv_splits, shuffle=True, random_state=42)
             
+        from ml_engine.evaluation import ModelEvaluator
+        evaluator = ModelEvaluator(self.problem_type, label_classes=self.label_encoder.classes_ if self.label_encoder else None)
+        
         results = []
         best_overall_model = None
         best_overall_score = -float('inf')
@@ -248,38 +251,24 @@ class ModelTrainingEngine:
                     cv_score = 0.0 # fallback
                     
                 training_time = time.time() - start_time
-                y_pred = model.predict(X_test)
                 
-                metrics = {}
-                score_for_comparison = cv_score
+                eval_results = evaluator.evaluate(model, X_test, y_test)
+                eval_results["cv_score"] = float(cv_score)
                 
-                if is_regression:
-                    metrics['mse'] = float(mean_squared_error(y_test, y_pred))
-                    metrics['mae'] = float(mean_absolute_error(y_test, y_pred))
-                    metrics['r2'] = float(r2_score(y_test, y_pred))
-                    if score_for_comparison == 0.0:
-                        score_for_comparison = metrics['r2']
-                else:
-                    metrics['accuracy'] = float(accuracy_score(y_test, y_pred))
-                    metrics['f1'] = float(f1_score(y_test, y_pred, average='weighted'))
-                    metrics['precision'] = float(precision_score(y_test, y_pred, average='weighted', zero_division=0))
-                    metrics['recall'] = float(recall_score(y_test, y_pred, average='weighted', zero_division=0))
-                    if score_for_comparison == 0.0:
-                        score_for_comparison = metrics['accuracy']
-                        
-                metrics['cv_score'] = float(cv_score)
+                score_for_comparison = eval_results["primary_score"]
                 
                 if score_for_comparison > best_overall_score:
                     best_overall_score = score_for_comparison
                     best_overall_model = model
                     best_model_name = name
-                    best_model_metrics = metrics
+                    best_model_metrics = eval_results["metrics"]
+                    best_model_metrics["cv_score"] = float(cv_score)
                     
                 results.append({
                     'model_name': name,
                     'status': 'success',
                     'training_time': round(training_time, 4),
-                    'metrics': metrics,
+                    'evaluation': eval_results
                 })
             except Exception as e:
                 import traceback
@@ -326,30 +315,59 @@ class ModelTrainingEngine:
             features_schema.append(feat)
             
         modality = "tabular"
+        # Since text_cols, num_cols, cat_cols are no longer easily available here without reparsing the plan, 
+        # we can just default to tabular, or extract from preprocessing_plan.
+        prep_plan = self.preprocessing_plan or {}
+        num_cols = [k for k, v in prep_plan.items() if v.get('type') == 'numeric']
+        cat_cols = [k for k, v in prep_plan.items() if v.get('type') == 'categorical']
+        text_cols = [k for k, v in prep_plan.items() if v.get('type') == 'text']
+        
         if len(text_cols) > 0:
             if len(num_cols) == 0 and len(cat_cols) == 0:
                 modality = "text"
             else:
                 modality = "tabular_text_hybrid"
         
-        # Schema representing the required input for the pipeline
+        if progress_callback: progress_callback("Saving best model", 90)
+                
+        # Explainability for best model
+        shap_summary = None
+        if best_overall_model:
+            from ml_engine.explainability import ModelExplainer
+            explainer = ModelExplainer(best_overall_model, X_test)
+            shap_summary = explainer.explain()
+                
+        # Save ONLY the best model
+        model_filename = f"pipeline.pkl"
+        model_path = os.path.join(self.model_save_dir, model_filename)
+        if best_overall_model:
+            joblib.dump(best_overall_model, model_path)
+            
+        relative_path = os.path.join(os.path.basename(os.path.dirname(self.model_save_dir)), os.path.basename(self.model_save_dir), model_filename).replace("\\", "/")
+
+        if progress_callback: progress_callback("Pipeline generated successfully", 100)
+
         schema = {
             "modality": modality,
             "numeric": num_cols,
             "categorical": cat_cols,
             "text": text_cols,
+            "target": self.target_column,
+            "problem_type": self.problem_type,
             "features": features_schema
         }
 
         return {
             'problem_type': self.problem_type,
             'models_evaluated': results,
+            'dataset_rows': self.X.shape[0] if hasattr(self, 'X') else 0,
             'best_model': {
                 'name': best_model_name,
                 'metrics': best_model_metrics,
                 'model_path': f"/media/{relative_path}",
                 'absolute_path': model_path,
                 'schema': schema,
-                'label_classes': self.label_encoder.classes_.tolist() if self.label_encoder else None
+                'label_classes': self.label_encoder.classes_.tolist() if self.label_encoder else None,
+                'shap_summary': shap_summary
             }
         }
