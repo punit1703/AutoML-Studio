@@ -34,12 +34,13 @@ except ImportError:
 
 
 class ModelTrainingEngine:
-    def __init__(self, df: pd.DataFrame, target_column: str, model_save_dir: str, problem_type: str = None, preprocessing_plan: dict = None):
+    def __init__(self, df: pd.DataFrame, target_column: str, model_save_dir: str, problem_type: str = None, preprocessing_plan: dict = None, dataset_profile: dict = None):
         self.df = df.copy()
         self.target_column = target_column
         self.model_save_dir = model_save_dir
         self.problem_type = problem_type
         self.preprocessing_plan = preprocessing_plan
+        self.dataset_profile = dataset_profile
         os.makedirs(self.model_save_dir, exist_ok=True)
         self.label_encoder = None
         
@@ -116,76 +117,32 @@ class ModelTrainingEngine:
             
         return X_train, X_test, y_train, y_test
 
-    def _get_regression_models(self, preprocessor):
-        from sklearn.feature_selection import SelectKBest, f_regression, VarianceThreshold
-
-        k_options = [10, 20, 50, 'all']
-
-        models = {}
-        models['Linear Regression'] = (
-            Pipeline([('preprocessor', preprocessor), ('variance', VarianceThreshold()), ('selector', SelectKBest(score_func=f_regression)), ('model', LinearRegression())]),
-            {'selector__k': k_options}
-        )
+    def _get_models(self, preprocessor, selected_models_meta):
+        from sklearn.feature_selection import SelectKBest, f_regression, f_classif, VarianceThreshold
+        from ml_engine.model_registry import ModelRegistry
         
-        models['Random Forest'] = (
-            Pipeline([('preprocessor', preprocessor), ('variance', VarianceThreshold()), ('selector', SelectKBest(score_func=f_regression)), ('model', RandomForestRegressor(random_state=42))]),
-            {
-                'selector__k': k_options,
-                'model__n_estimators': [50, 100],
-                'model__max_depth': [None, 10, 20]
-            }
-        )
-        
-        if XGB_AVAILABLE:
-            models['XGBoost'] = (
-                Pipeline([('preprocessor', preprocessor), ('variance', VarianceThreshold()), ('selector', SelectKBest(score_func=f_regression)), ('model', xgb.XGBRegressor(random_state=42))]),
-                {
-                    'selector__k': k_options,
-                    'model__n_estimators': [50, 100],
-                    'model__learning_rate': [0.01, 0.1]
-                }
-            )
-            
-        return models
-        
-    def _get_classification_models(self, preprocessor, problem_type):
-        from sklearn.feature_selection import SelectKBest, f_classif, VarianceThreshold
-
-        k_options = [10, 20, 50, 'all']
-        
-        is_multiclass = problem_type == "Multiclass Classification"
-
+        all_models = ModelRegistry.get_models()
         models = {}
         
-        log_reg = LogisticRegression(max_iter=500, random_state=42, multi_class='multinomial' if is_multiclass else 'auto')
-        models['Logistic Regression'] = (
-            Pipeline([('preprocessor', preprocessor), ('variance', VarianceThreshold()), ('selector', SelectKBest(score_func=f_classif)), ('model', log_reg)]),
-            {
-                'selector__k': k_options,
-                'model__C': [0.1, 1.0, 10.0]
-            }
-        )
+        is_regression = self.problem_type == "Regression"
+        score_func = f_regression if is_regression else f_classif
+        is_multiclass = self.problem_type == "Multiclass Classification"
         
-        models['Random Forest'] = (
-            Pipeline([('preprocessor', preprocessor), ('variance', VarianceThreshold()), ('selector', SelectKBest(score_func=f_classif)), ('model', RandomForestClassifier(random_state=42))]),
-            {
-                'selector__k': k_options,
-                'model__n_estimators': [50, 100],
-                'model__max_depth': [None, 10, 20]
-            }
-        )
-        
-        if XGB_AVAILABLE:
-            xgb_objective = 'multi:softprob' if is_multiclass else 'binary:logistic'
-            models['XGBoost'] = (
-                Pipeline([('preprocessor', preprocessor), ('variance', VarianceThreshold()), ('selector', SelectKBest(score_func=f_classif)), ('model', xgb.XGBClassifier(random_state=42, objective=xgb_objective))]),
-                {
-                    'selector__k': k_options,
-                    'model__n_estimators': [50, 100],
-                    'model__learning_rate': [0.01, 0.1]
-                }
-            )
-            
+        for model_info in selected_models_meta:
+            name = model_info["name"]
+            if name in all_models:
+                meta = all_models[name]
+                estimator = meta["get_estimator"](is_multiclass)
+                
+                pipeline = Pipeline([
+                    ('preprocessor', preprocessor), 
+                    ('variance', VarianceThreshold()), 
+                    ('selector', SelectKBest(score_func=score_func)), 
+                    ('model', estimator)
+                ])
+                
+                models[name] = (pipeline, meta["param_grid"])
+                
         return models
 
     def train_and_evaluate(self, progress_callback=None):
@@ -194,6 +151,26 @@ class ModelTrainingEngine:
             
         is_regression = self.problem_type == "Regression"
         
+        # Get Model Recommendations
+        if progress_callback: progress_callback("Selecting optimal models", 15)
+        from ml_engine.model_recommendation import ModelRecommendationEngine
+        # Assume self.df profile is available or we can build a minimal profile if dataset.metadata isn't passed directly.
+        # Wait, ModelTrainingEngine doesn't have dataset.metadata in __init__ currently.
+        # Let's see if we can pass recommended models directly.
+        # For now, let's just generate a minimal profile since we only need rows/cols.
+        dummy_profile = {
+            "dataset": {"rows": len(self.df), "columns": len(self.df.columns)},
+            "columns": {} # We can skip full column detail here as has_text check won't work perfectly without it
+        }
+        # But we really should pass the full profile. I will update __init__ in a moment.
+        if hasattr(self, 'dataset_profile') and self.dataset_profile:
+            rec_engine = ModelRecommendationEngine(self.dataset_profile, self.problem_type)
+        else:
+            rec_engine = ModelRecommendationEngine(dummy_profile, self.problem_type)
+            
+        recommendation = rec_engine.recommend()
+        selected_models_meta = recommendation["selected_models"]
+        
         if progress_callback: progress_callback("Preparing data", 25)
         X_train, X_test, y_train, y_test = self._prepare_data(self.problem_type)
         
@@ -201,11 +178,12 @@ class ModelTrainingEngine:
         preprocessor, num_cols, cat_cols, text_cols = self._build_preprocessor()
         
         if progress_callback: progress_callback("Setting up models", 45)
+        
+        models = self._get_models(preprocessor, selected_models_meta)
+        
         if is_regression:
-            models = self._get_regression_models(preprocessor)
             cv_splitter = KFold(n_splits=3, shuffle=True, random_state=42)
         else:
-            models = self._get_classification_models(preprocessor, self.problem_type)
             cv_splitter = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
             
         results = []

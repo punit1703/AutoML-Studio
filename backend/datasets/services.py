@@ -431,7 +431,7 @@ class DatasetService:
             plan_engine = PreprocessingRecommendationEngine(dataset.metadata, target_column)
             preprocessing_plan = plan_engine.generate_plan()
             
-            engine = ModelTrainingEngine(df, target_column, output_dir, problem_type=problem_type, preprocessing_plan=preprocessing_plan)
+            engine = ModelTrainingEngine(df, target_column, output_dir, problem_type=problem_type, preprocessing_plan=preprocessing_plan, dataset_profile=dataset.metadata)
             results = engine.train_and_evaluate()
             
             return results
@@ -467,7 +467,7 @@ class DatasetService:
             plan_engine = PreprocessingRecommendationEngine(dataset.metadata, target_column)
             preprocessing_plan = plan_engine.generate_plan()
             
-            engine = ModelTrainingEngine(df, target_column, output_dir, problem_type=problem_type, preprocessing_plan=preprocessing_plan)
+            engine = ModelTrainingEngine(df, target_column, output_dir, problem_type=problem_type, preprocessing_plan=preprocessing_plan, dataset_profile=dataset.metadata)
             results = engine.train_and_evaluate(progress_callback=progress_callback)
             
             best = results['best_model']
@@ -512,7 +512,7 @@ class DatasetService:
             plan_engine = PreprocessingRecommendationEngine(dataset.metadata, target_column)
             preprocessing_plan = plan_engine.generate_plan()
                 
-            training_engine = ModelTrainingEngine(df, target_column, output_dir, problem_type=problem_type, preprocessing_plan=preprocessing_plan)
+            training_engine = ModelTrainingEngine(df, target_column, output_dir, problem_type=problem_type, preprocessing_plan=preprocessing_plan, dataset_profile=dataset.metadata)
             _, X_test, _, y_test = training_engine._prepare_data(problem_type)
             
             models = {}

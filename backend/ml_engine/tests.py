@@ -326,3 +326,57 @@ class PreprocessingEngineTests(unittest.TestCase):
         self.assertGreater(X_trans.shape[1], df.shape[1])
 
 
+from ml_engine.model_recommendation import ModelRecommendationEngine
+
+class ModelRecommendationEngineTests(unittest.TestCase):
+    def setUp(self):
+        self.profile = {
+            "dataset": {
+                "rows": 100,
+                "columns": 6,
+            },
+            "columns": {
+                "age": {"inferred_type": "numeric"},
+                "status": {"inferred_type": "categorical"},
+            }
+        }
+        
+    def test_small_dataset_recommendation(self):
+        engine = ModelRecommendationEngine(self.profile, "Binary Classification")
+        rec = engine.recommend()
+        
+        self.assertEqual(rec["scale"], "Small")
+        self.assertEqual(rec["budget"], 3)
+        self.assertTrue(len(rec["selected_models"]) <= 3)
+        
+        selected_names = [m["name"] for m in rec["selected_models"]]
+        # Linear models should be prioritized
+        self.assertIn("Logistic Regression", selected_names)
+        
+    def test_large_dataset_recommendation(self):
+        self.profile["dataset"]["rows"] = 100000
+        engine = ModelRecommendationEngine(self.profile, "Binary Classification")
+        rec = engine.recommend()
+        
+        self.assertEqual(rec["scale"], "Large")
+        self.assertEqual(rec["budget"], 3)
+        
+        selected_names = [m["name"] for m in rec["selected_models"]]
+        excluded_names = [m["name"] for m in rec["excluded_models"]]
+        
+        # Random Forest should be excluded on very large datasets
+        self.assertIn("Random Forest Classifier", excluded_names)
+        
+        # LightGBM should be highly prioritized if available
+        if "LightGBM Classifier" in selected_names or "LightGBM Classifier" in excluded_names:
+            # If LGBM is installed
+            self.assertIn("LightGBM Classifier", selected_names)
+            
+    def test_sparse_text_dataset_recommendation(self):
+        self.profile["columns"]["comments"] = {"inferred_type": "text"}
+        engine = ModelRecommendationEngine(self.profile, "Regression")
+        rec = engine.recommend()
+        
+        excluded_names = [m["name"] for m in rec["excluded_models"]]
+        # Random forest should be excluded because of text/sparsity
+        self.assertIn("Random Forest Regressor", excluded_names)

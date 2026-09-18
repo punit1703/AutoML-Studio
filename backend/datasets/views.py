@@ -139,6 +139,24 @@ class DatasetViewSet(viewsets.ModelViewSet):
         
         return Response({"plan": plan}, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['get'])
+    def model_recommendation(self, request, pk=None):
+        dataset = self.get_object()
+        
+        if not dataset.metadata or 'problem_type' not in dataset.metadata:
+            return Response({"error": "Dataset profile or problem type not generated"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        problem_type = dataset.metadata.get('problem_type')
+        
+        try:
+            from ml_engine.model_recommendation import ModelRecommendationEngine
+            engine = ModelRecommendationEngine(dataset.metadata, problem_type)
+            recommendation = engine.recommend()
+            return Response(recommendation, status=status.HTTP_200_OK)
+        except Exception as e:
+            import traceback
+            return Response({"error": f"Failed to generate model recommendations: {str(e)}\n{traceback.format_exc()}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     @action(detail=True, methods=['post'])
     def run_pipeline(self, request, pk=None):
         dataset = self.get_object()
