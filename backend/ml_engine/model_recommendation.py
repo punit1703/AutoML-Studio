@@ -21,7 +21,8 @@ class ModelRecommendationEngine:
         # Determine presence of text or high cardinality for sparsity checks
         self.has_text = any(c.get("inferred_type") == "text" for c in self.profile.get("columns", {}).values())
         
-    def recommend(self) -> dict:
+    def recommend(self, budget_tier: str = "standard") -> dict:
+        from ml_engine.config import ModelSelectionConfig
         all_models = ModelRegistry.get_models()
         
         selected_models = []
@@ -30,13 +31,13 @@ class ModelRecommendationEngine:
         # Determine dataset scale
         if self.rows < 1000:
             scale = "Small"
-            budget = 3
         elif self.rows < 50000:
             scale = "Medium"
-            budget = 4
         else:
             scale = "Large"
-            budget = 3 # Keep budget tight for large datasets
+            
+        config = ModelSelectionConfig.get_config(budget_tier)
+        budget = config["max_models"]
             
         # Filter available models by problem type
         candidates = {

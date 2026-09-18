@@ -161,9 +161,10 @@ class DatasetViewSet(viewsets.ModelViewSet):
     def run_pipeline(self, request, pk=None):
         dataset = self.get_object()
         target_column = request.data.get('target_column')
+        budget = request.data.get('budget', 'standard')
         if not target_column:
             return Response({"error": "target_column is required"}, status=status.HTTP_400_BAD_REQUEST)
-        result = DatasetService.run_pipeline(dataset, target_column)
+        result = DatasetService.run_pipeline(dataset, target_column, budget)
         return Response(result, status=status.HTTP_200_OK)
 
 
@@ -191,10 +192,11 @@ class DatasetViewSet(viewsets.ModelViewSet):
     def train(self, request, pk=None):
         dataset = self.get_object()
         target_column = request.data.get('target_column')
+        budget = request.data.get('budget', 'standard')
         
         if not target_column:
             return Response({"error": "target_column is required"}, status=status.HTTP_400_BAD_REQUEST)
-        result = DatasetService.train_models(dataset, target_column)
+        result = DatasetService.train_models(dataset, target_column, budget)
         return Response(result, status=status.HTTP_200_OK)
 
 

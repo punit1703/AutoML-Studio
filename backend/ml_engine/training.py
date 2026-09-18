@@ -34,13 +34,14 @@ except ImportError:
 
 
 class ModelTrainingEngine:
-    def __init__(self, df: pd.DataFrame, target_column: str, model_save_dir: str, problem_type: str = None, preprocessing_plan: dict = None, dataset_profile: dict = None):
+    def __init__(self, df: pd.DataFrame, target_column: str, model_save_dir: str, problem_type: str = None, preprocessing_plan: dict = None, dataset_profile: dict = None, budget: str = "standard"):
         self.df = df.copy()
         self.target_column = target_column
         self.model_save_dir = model_save_dir
         self.problem_type = problem_type
         self.preprocessing_plan = preprocessing_plan
         self.dataset_profile = dataset_profile
+        self.budget = budget
         os.makedirs(self.model_save_dir, exist_ok=True)
         self.label_encoder = None
         
@@ -110,10 +111,17 @@ class ModelTrainingEngine:
             
         X_train, X_test, y_train, y_test = train_test_split(X, y_valid, test_size=0.2, random_state=42)
         
-        MAX_TRAIN_SIZE = 5000
-        if len(X_train) > MAX_TRAIN_SIZE:
-            X_train = X_train.sample(n=MAX_TRAIN_SIZE, random_state=42)
-            y_train = y_train.loc[X_train.index]
+        from ml_engine.config import ModelSelectionConfig
+        config = ModelSelectionConfig.get_config(self.budget)
+        max_rows = config["max_rows"]
+        
+        if len(X_train) > max_rows:
+            if problem_type != 'Regression':
+                # Preserve class balance
+                X_train, _, y_train, _ = train_test_split(X_train, y_train, train_size=max_rows, stratify=y_train, random_state=42)
+            else:
+                X_train = X_train.sample(n=max_rows, random_state=42)
+                y_train = y_train.loc[X_train.index]
             
         return X_train, X_test, y_train, y_test
 
@@ -154,21 +162,23 @@ class ModelTrainingEngine:
         # Get Model Recommendations
         if progress_callback: progress_callback("Selecting optimal models", 15)
         from ml_engine.model_recommendation import ModelRecommendationEngine
-        # Assume self.df profile is available or we can build a minimal profile if dataset.metadata isn't passed directly.
-        # Wait, ModelTrainingEngine doesn't have dataset.metadata in __init__ currently.
-        # Let's see if we can pass recommended models directly.
-        # For now, let's just generate a minimal profile since we only need rows/cols.
+        from ml_engine.config import ModelSelectionConfig
+        
+        config = ModelSelectionConfig.get_config(self.budget)
+        cv_splits = config["cv_splits"]
+        search_budget = config["search_budget"]
+        timeout_per_model = config["timeout_per_model"]
+        
         dummy_profile = {
             "dataset": {"rows": len(self.df), "columns": len(self.df.columns)},
-            "columns": {} # We can skip full column detail here as has_text check won't work perfectly without it
+            "columns": {} 
         }
-        # But we really should pass the full profile. I will update __init__ in a moment.
         if hasattr(self, 'dataset_profile') and self.dataset_profile:
             rec_engine = ModelRecommendationEngine(self.dataset_profile, self.problem_type)
         else:
             rec_engine = ModelRecommendationEngine(dummy_profile, self.problem_type)
             
-        recommendation = rec_engine.recommend()
+        recommendation = rec_engine.recommend(budget_tier=self.budget)
         selected_models_meta = recommendation["selected_models"]
         
         if progress_callback: progress_callback("Preparing data", 25)
@@ -182,9 +192,9 @@ class ModelTrainingEngine:
         models = self._get_models(preprocessor, selected_models_meta)
         
         if is_regression:
-            cv_splitter = KFold(n_splits=3, shuffle=True, random_state=42)
+            cv_splitter = KFold(n_splits=cv_splits, shuffle=True, random_state=42)
         else:
-            cv_splitter = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
+            cv_splitter = StratifiedKFold(n_splits=cv_splits, shuffle=True, random_state=42)
             
         results = []
         best_overall_model = None
@@ -192,7 +202,6 @@ class ModelTrainingEngine:
         best_model_name = ""
         best_model_metrics = {}
         
-        search_budget = 3  # Increase this for production, keep low for testing
         total_models = len(models)
         
         for idx, (name, (base_model, param_grid)) in enumerate(models.items()):
@@ -226,7 +235,7 @@ class ModelTrainingEngine:
                     # Optimize
                     optuna.logging.set_verbosity(optuna.logging.WARNING)
                     study = optuna.create_study(direction='maximize')
-                    study.optimize(objective, n_trials=search_budget, timeout=300)
+                    study.optimize(objective, n_trials=search_budget, timeout=timeout_per_model)
                     
                     # Best model
                     model = base_model
@@ -333,7 +342,7 @@ class ModelTrainingEngine:
         }
 
         return {
-            'problem_type': problem_type,
+            'problem_type': self.problem_type,
             'models_evaluated': results,
             'best_model': {
                 'name': best_model_name,

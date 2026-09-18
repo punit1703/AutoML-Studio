@@ -49,7 +49,11 @@ export default function PipelineBuilderPage() {
     // Start Pipeline automatically on mount
     const startPipeline = async () => {
       try {
-        const res = await api.post(`v1/datasets/${datasetId}/run_pipeline/`, { target_column: savedTarget });
+        const savedBudget = localStorage.getItem(`training_budget_${datasetId}`) || "standard";
+        const res = await api.post(`v1/datasets/${datasetId}/run_pipeline/`, { 
+          target_column: savedTarget,
+          budget: savedBudget
+        });
         const jobId = res.data.job_id;
         setActiveJobId(jobId);
         pollJob(jobId);

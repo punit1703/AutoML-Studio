@@ -46,8 +46,7 @@ class ModelRegistry:
                 "memory_efficient": True,
                 "get_estimator": lambda is_multiclass: LogisticRegression(
                     max_iter=500, 
-                    random_state=42, 
-                    multi_class='multinomial' if is_multiclass else 'auto'
+                    random_state=42
                 ),
                 "param_grid": {
                     'selector__k': k_options,

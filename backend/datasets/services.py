@@ -418,7 +418,7 @@ class DatasetService:
             raise ValidationError(f"Error generating visualization: {str(e)}")
 
     @staticmethod
-    def train_models(dataset: Dataset, target_column: str):
+    def train_models(dataset: Dataset, target_column: str, budget: str = 'standard'):
         try:
             df = read_dataframe(dataset.file.path, dataset.file_name)
             
@@ -431,7 +431,7 @@ class DatasetService:
             plan_engine = PreprocessingRecommendationEngine(dataset.metadata, target_column)
             preprocessing_plan = plan_engine.generate_plan()
             
-            engine = ModelTrainingEngine(df, target_column, output_dir, problem_type=problem_type, preprocessing_plan=preprocessing_plan, dataset_profile=dataset.metadata)
+            engine = ModelTrainingEngine(df, target_column, output_dir, problem_type=problem_type, preprocessing_plan=preprocessing_plan, dataset_profile=dataset.metadata, budget=budget)
             results = engine.train_and_evaluate()
             
             return results
@@ -439,7 +439,7 @@ class DatasetService:
             raise ValidationError(f"Error training models: {str(e)}")
 
     @staticmethod
-    def run_pipeline(dataset: Dataset, target_column: str):
+    def run_pipeline(dataset: Dataset, target_column: str, budget: str = 'standard'):
         job = MLJob.objects.create(
             dataset=dataset,
             job_type=JobType.TRAIN_MODEL,
@@ -447,13 +447,13 @@ class DatasetService:
             current_stage="Queued for training"
         )
         from jobs.tasks import run_train_models_task
-        thread = threading.Thread(target=run_train_models_task, args=(job.id, dataset.id, target_column))
+        thread = threading.Thread(target=run_train_models_task, args=(job.id, dataset.id, target_column, budget))
         thread.start()
         
         return {"job_id": str(job.id), "status": "Training started"}
 
     @staticmethod
-    def _sync_run_pipeline(dataset: Dataset, target_column: str, progress_callback=None):
+    def _sync_run_pipeline(dataset: Dataset, target_column: str, progress_callback=None, budget: str = 'standard'):
         try:
             from deployments.models import Deployment
             df = read_dataframe(dataset.file.path, dataset.file_name)
@@ -467,7 +467,7 @@ class DatasetService:
             plan_engine = PreprocessingRecommendationEngine(dataset.metadata, target_column)
             preprocessing_plan = plan_engine.generate_plan()
             
-            engine = ModelTrainingEngine(df, target_column, output_dir, problem_type=problem_type, preprocessing_plan=preprocessing_plan, dataset_profile=dataset.metadata)
+            engine = ModelTrainingEngine(df, target_column, output_dir, problem_type=problem_type, preprocessing_plan=preprocessing_plan, dataset_profile=dataset.metadata, budget=budget)
             results = engine.train_and_evaluate(progress_callback=progress_callback)
             
             best = results['best_model']

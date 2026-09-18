@@ -16,6 +16,7 @@ export default function PreprocessingPlanPage() {
   
   const [plan, setPlan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [budget, setBudget] = useState("standard");
 
   useEffect(() => {
     if (!datasetId) {
@@ -38,6 +39,7 @@ export default function PreprocessingPlanPage() {
   }, [datasetId, router]);
 
   const handleBuildPipeline = async () => {
+    localStorage.setItem(`training_budget_${datasetId}`, budget);
     // Navigate to model training / next step
     router.push(`/studio/projects/${projectId}/train`);
   };
@@ -147,7 +149,19 @@ export default function PreprocessingPlanPage() {
         })}
       </div>
 
-      <div className="flex justify-end pt-4 border-t border-border">
+      <div className="flex flex-col sm:flex-row items-center justify-end pt-4 border-t border-border gap-4">
+        <div className="flex items-center gap-3 bg-secondary/20 p-2 rounded-lg border border-border">
+          <span className="text-sm font-semibold text-muted-foreground whitespace-nowrap">Training Budget:</span>
+          <select
+            value={budget}
+            onChange={(e) => setBudget(e.target.value)}
+            className="bg-background border border-border text-foreground text-sm rounded focus:ring-primary focus:border-primary block p-2 font-mono"
+          >
+            <option value="fast">Fast (Quick baseline, small sample)</option>
+            <option value="standard">Standard (Balanced, good for most)</option>
+            <option value="thorough">Thorough (Exhaustive search)</option>
+          </select>
+        </div>
         <button
           onClick={handleBuildPipeline}
           className="px-8 py-4 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 transition-all shadow-[0_0_20px_rgba(56,189,248,0.4)] flex items-center gap-2"

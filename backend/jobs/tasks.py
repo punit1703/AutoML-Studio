@@ -11,7 +11,7 @@ def handle_job_error(job_id, error_message):
     except Exception:
         pass
 
-def run_train_models_task(job_id, dataset_id, target_column):
+def run_train_models_task(job_id, dataset_id, target_column, budget="standard"):
     try:
         job = MLJob.objects.get(id=job_id)
         dataset = Dataset.objects.get(id=dataset_id)
@@ -19,16 +19,28 @@ def run_train_models_task(job_id, dataset_id, target_column):
         def update_progress(stage_name, progress_val):
             job.current_stage = stage_name
             job.progress = progress_val
-            job.save(update_fields=['current_stage', 'progress'])
+            
+            # Map granular states correctly to JobStatus enum
+            lower_stage = stage_name.lower()
+            if "preparing data" in lower_stage or "optimal model" in lower_stage:
+                job.status = JobStatus.PREPROCESSING
+            elif "training" in lower_stage or "model" in lower_stage:
+                job.status = JobStatus.TRAINING
+            elif "evaluat" in lower_stage or "saving" in lower_stage:
+                job.status = JobStatus.EVALUATION
+                
+            job.save(update_fields=['current_stage', 'progress', 'status'])
             
         update_progress("Starting model training", 10)
         
         # Import here to avoid circular imports
         from datasets.services import DatasetService
         
-        result = DatasetService._sync_run_pipeline(dataset, target_column, update_progress)
+        result = DatasetService._sync_run_pipeline(dataset, target_column, update_progress, budget=budget)
         
-        update_progress("Pipeline generated successfully", 100)
+        job.status = JobStatus.COMPLETED
+        job.current_stage = "Pipeline generated successfully"
+        job.progress = 100
         job.result = result
         job.save()
         
