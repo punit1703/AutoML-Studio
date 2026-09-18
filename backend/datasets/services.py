@@ -375,20 +375,13 @@ class DatasetService:
         if not dataset.metadata:
             return {"suggestions": []}
             
-        ai_rec = dataset.metadata.get('ai_recommendation', {})
-        target = ai_rec.get('target_column')
+        from ml_engine.target_detector import TargetDetectionEngine
+        detector = TargetDetectionEngine(dataset.metadata)
+        candidates = detector.detect_targets()
         
-        # If AI found a target, prioritize it
-        if target:
-            return {"suggestions": [{"column": target, "score": 5, "stars": "★★★★★"}]}
-            
-        # Fallback to simple suggestion
-        cols = dataset.metadata.get('columns', [])
-        target_candidates = [col for col in cols if col.lower() in ['target', 'class', 'label', 'price', 'status', 'churn']]
-        if target_candidates:
-            return {"suggestions": [{"column": target_candidates[0], "score": 4, "stars": "★★★★"}]}
-            
-        return {"suggestions": [{"column": cols[-1] if cols else "", "score": 3, "stars": "★★★"}]}
+        # If AI found a target (from old logic), we could still inject it or boost it,
+        # but for now, let's just return the intelligent candidates.
+        return {"suggestions": candidates}
 
     @staticmethod
     def preprocess_dataset(dataset: Dataset, config: dict):

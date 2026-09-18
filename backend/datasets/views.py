@@ -93,6 +93,36 @@ class DatasetViewSet(viewsets.ModelViewSet):
         return Response(suggestions, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
+    def set_target(self, request, pk=None):
+        dataset = self.get_object()
+        target_column = request.data.get('target_column')
+        problem_type = request.data.get('problem_type')
+        
+        if not target_column:
+            return Response({"error": "target_column is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if not dataset.metadata:
+            dataset.metadata = {}
+            
+        dataset.metadata['target_column'] = target_column
+        
+        if problem_type and problem_type != 'auto':
+            dataset.metadata['problem_type'] = problem_type
+        else:
+            # Auto-determine if requested
+            from ml_engine.target_detector import TargetDetectionEngine
+            detector = TargetDetectionEngine(dataset.metadata)
+            dataset.metadata['problem_type'] = detector.determine_problem_type(target_column)
+            
+        dataset.save(update_fields=['metadata'])
+        
+        return Response({
+            "status": "success", 
+            "target_column": dataset.metadata['target_column'],
+            "problem_type": dataset.metadata['problem_type']
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'])
     def run_pipeline(self, request, pk=None):
         dataset = self.get_object()
         target_column = request.data.get('target_column')

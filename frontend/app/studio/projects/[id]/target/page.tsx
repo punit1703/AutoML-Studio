@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Target, Loader2, ArrowRight, Wand2 } from "lucide-react";
+import { Target, Loader2, ArrowRight, Wand2, ShieldAlert, CheckCircle2 } from "lucide-react";
 import api from "@/lib/api";
 import { useRouter, useParams } from "next/navigation";
 import { useAppContext } from "@/context/AppContext";
@@ -33,13 +33,17 @@ export default function TargetSelectionPage() {
           api.get(`v1/datasets/${datasetId}/suggest_targets/`),
           api.get(`v1/datasets/${datasetId}/analyze/`)
         ]);
-        setSuggestions(suggestRes.data.suggestions || []);
-        if (suggestRes.data.suggestions?.length > 0) {
-          setSelectedTarget(suggestRes.data.suggestions[0].column);
+        
+        const fetchedSuggestions = suggestRes.data.suggestions || [];
+        setSuggestions(fetchedSuggestions);
+        
+        if (fetchedSuggestions.length > 0) {
+          setSelectedTarget(fetchedSuggestions[0].column);
         }
-        setColumns(dsRes.data.columns || []);
+        
+        setColumns(dsRes.data.columns ? Object.keys(dsRes.data.columns) : []);
       } catch (error) {
-        console.error("Failed to fetch suggestions", error);
+        console.error("Failed to fetch target suggestions", error);
       } finally {
         setLoading(false);
       }
@@ -48,23 +52,29 @@ export default function TargetSelectionPage() {
     fetchData();
   }, [datasetId, router]);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!selectedTarget) return;
     setIsSubmitting(true);
     
-    // Store problem type choice locally or pass via query params
-    localStorage.setItem(`problem_type_${datasetId}`, problemType);
-    localStorage.setItem(`target_column_${datasetId}`, selectedTarget);
-    
-    // Proceed to AI Analysis
-    router.push(`/studio/projects/${projectId}/ai-analysis`);
+    try {
+      await api.post(`v1/datasets/${datasetId}/set_target/`, {
+        target_column: selectedTarget,
+        problem_type: problemType
+      });
+      // Proceed to AI Analysis workflow
+      router.push(`/studio/projects/${projectId}/ai-analysis`);
+    } catch (error) {
+      console.error("Failed to set target column", error);
+      setIsSubmitting(false);
+    }
   };
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
-        <h2 className="text-xl font-bold font-mono">Analyzing Candidates...</h2>
+        <h2 className="text-xl font-bold font-mono">Analyzing Target Candidates...</h2>
+        <p className="text-muted-foreground">Scoring columns based on naming, cardinality, and data types.</p>
       </div>
     );
   }
@@ -76,7 +86,7 @@ export default function TargetSelectionPage() {
           <Target className="w-8 h-8 text-primary" /> Target Selection
         </h1>
         <p className="text-muted-foreground mt-2 text-sm">
-          Select the column you want the machine learning model to predict.
+          Select the column you want the machine learning model to predict. Our engine has scored and ranked the best candidates for you.
         </p>
       </div>
 
@@ -90,14 +100,42 @@ export default function TargetSelectionPage() {
               <button
                 key={idx}
                 onClick={() => setSelectedTarget(target.column)}
-                className={`w-full text-left p-4 rounded-lg border-2 transition-all flex items-center justify-between ${
+                className={`w-full text-left p-4 rounded-lg border-2 transition-all flex flex-col gap-2 ${
                   selectedTarget === target.column 
-                    ? "border-primary bg-primary/10 shadow-[0_0_15px_rgba(56,189,248,0.2)]" 
-                    : "border-border bg-card hover:border-primary/50"
+                    ? "border-primary bg-primary/5 shadow-[0_0_15px_rgba(56,189,248,0.2)]" 
+                    : "border-border bg-card hover:border-primary/30"
                 }`}
               >
-                <span className="font-mono font-bold text-foreground">{target.column}</span>
-                <span className="text-warning text-xs tracking-widest">{target.stars}</span>
+                <div className="flex items-center justify-between w-full">
+                  <span className="font-mono font-bold text-lg">{target.column}</span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-2 py-0.5 rounded font-bold ${
+                      target.confidence === 'High' ? 'bg-success/20 text-success' :
+                      target.confidence === 'Medium' ? 'bg-warning/20 text-warning' : 'bg-muted text-muted-foreground'
+                    }`}>
+                      {target.confidence} Confidence
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+                  Detected Type: <span className="text-foreground">{target.detected_type}</span>
+                </div>
+                
+                <ul className="text-xs text-muted-foreground space-y-1 mt-2">
+                  {target.reasons?.map((r: string, i: number) => (
+                    <li key={i} className="flex items-start gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" /> 
+                      {r}
+                    </li>
+                  ))}
+                  {target.leakage_warning && (
+                    <li className="flex items-start gap-1.5 text-destructive font-medium">
+                      <ShieldAlert className="w-3.5 h-3.5 shrink-0 mt-0.5" /> 
+                      Warning: Potential data leakage detected from naming.
+                    </li>
+                  )}
+                </ul>
               </button>
             ))}
           </div>
@@ -118,7 +156,7 @@ export default function TargetSelectionPage() {
         </div>
 
         <div className="space-y-6">
-          <Card className="bg-card border-border">
+          <Card className="bg-card border-border sticky top-6">
             <CardContent className="p-6 space-y-6">
               <div>
                 <h3 className="text-lg font-bold mb-4">Problem Type</h3>
@@ -127,21 +165,21 @@ export default function TargetSelectionPage() {
                     <input type="radio" name="problemType" value="auto" checked={problemType === 'auto'} onChange={(e) => setProblemType(e.target.value)} className="accent-primary w-4 h-4" />
                     <div>
                       <div className="font-bold text-sm">Auto Detect</div>
-                      <div className="text-xs text-muted-foreground">Let AI determine if this is classification or regression</div>
+                      <div className="text-xs text-muted-foreground">Let AI determine classification or regression based on target signature.</div>
                     </div>
                   </label>
                   <label className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${problemType === 'classification' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted'}`}>
                     <input type="radio" name="problemType" value="classification" checked={problemType === 'classification'} onChange={(e) => setProblemType(e.target.value)} className="accent-primary w-4 h-4" />
                     <div>
                       <div className="font-bold text-sm">Classification</div>
-                      <div className="text-xs text-muted-foreground">Predict a discrete category or class label</div>
+                      <div className="text-xs text-muted-foreground">Predict a discrete category or class label.</div>
                     </div>
                   </label>
                   <label className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${problemType === 'regression' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted'}`}>
                     <input type="radio" name="problemType" value="regression" checked={problemType === 'regression'} onChange={(e) => setProblemType(e.target.value)} className="accent-primary w-4 h-4" />
                     <div>
                       <div className="font-bold text-sm">Regression</div>
-                      <div className="text-xs text-muted-foreground">Predict a continuous numerical value</div>
+                      <div className="text-xs text-muted-foreground">Predict a continuous numerical value.</div>
                     </div>
                   </label>
                 </div>
@@ -154,9 +192,9 @@ export default function TargetSelectionPage() {
                   className="w-full px-6 py-4 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 transition-all shadow-[0_0_20px_rgba(56,189,248,0.4)] flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {isSubmitting ? (
-                    <><Loader2 className="w-5 h-5 animate-spin" /> Generating AI Analysis...</>
+                    <><Loader2 className="w-5 h-5 animate-spin" /> Saving Target...</>
                   ) : (
-                    <>Run AI Dataset Analysis <ArrowRight className="w-5 h-5" /></>
+                    <>Confirm & Proceed <ArrowRight className="w-5 h-5" /></>
                   )}
                 </button>
               </div>

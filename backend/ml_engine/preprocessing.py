@@ -219,17 +219,40 @@ class DataPreprocessingEngine:
         return self
 
     def apply_pipeline(self, config: dict):
-        # Always drop unnecessary columns first to clean up the data for ML
+        target_column = config.get('target_column')
+        target_series = None
+        
+        # 1. Isolate Target Column
+        if target_column and target_column in self.df.columns:
+            target_series = self.df.pop(target_column)
+
+        # 2. Always drop unnecessary columns first to clean up the data for ML
         self.drop_unnecessary_columns()
         
         if config.get('remove_duplicates'):
+            # If removing duplicates, we MUST include the target to keep rows aligned,
+            # but wait, if we remove duplicates based on features, we might drop rows
+            # where target is different. Standard practice: remove duplicates on full dataframe.
+            if target_series is not None:
+                self.df[target_column] = target_series
             self.remove_duplicates()
+            if target_series is not None:
+                target_series = self.df.pop(target_column)
             
         if 'missing_values' in config:
             self.handle_missing_values(**config['missing_values'])
             
         if 'outliers' in config:
+            # Similar to duplicates, dropping outliers will drop rows.
+            # We must rejoin target to drop rows simultaneously, then pop it again.
+            if target_series is not None:
+                self.df[target_column] = target_series
+            
+            action = config['outliers'].get('action', 'drop')
             self.detect_outliers(**config['outliers'])
+            
+            if target_series is not None:
+                target_series = self.df.pop(target_column)
             
         if 'encode_labels' in config:
             self.encode_labels(**config['encode_labels'])
@@ -240,11 +263,15 @@ class DataPreprocessingEngine:
         if 'scale' in config:
             self.scale_features(**config['scale'])
             
+        # 3. Rejoin Target Column before feature selection / SMOTE
+        if target_series is not None:
+            self.df[target_column] = target_series
+            
         if 'feature_selection' in config:
+            # feature selection handles the target internally
             self.select_features(**config['feature_selection'])
             
         if 'smote' in config and config['smote']:
-            target_column = config.get('target_column')
             if target_column:
                 self.apply_smote(target_column)
             

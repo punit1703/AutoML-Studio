@@ -107,3 +107,74 @@ class DatasetProfilerTests(unittest.TestCase):
         
         self.assertEqual(cols['missing_col']['missing_count'], 50)
         self.assertEqual(cols['missing_col']['missing_pct'], 50.0)
+
+from ml_engine.target_detector import TargetDetectionEngine
+
+class TargetDetectionEngineTests(unittest.TestCase):
+    def setUp(self):
+        self.profile = {
+            "dataset": {
+                "rows": 100,
+                "columns": 6,
+            },
+            "columns": {
+                "user_id": {
+                    "inferred_type": "numeric",
+                    "unique_count": 100,
+                    "unique_pct": 100.0,
+                    "is_identifier": True
+                },
+                "age": {
+                    "inferred_type": "numeric",
+                    "pandas_dtype": "int64",
+                    "unique_count": 45,
+                    "unique_pct": 45.0
+                },
+                "status": {
+                    "inferred_type": "categorical",
+                    "unique_count": 3,
+                    "unique_pct": 3.0
+                },
+                "churn": {
+                    "inferred_type": "boolean",
+                    "unique_count": 2,
+                    "unique_pct": 2.0
+                },
+                "price": {
+                    "inferred_type": "numeric",
+                    "pandas_dtype": "float64",
+                    "unique_count": 95,
+                    "unique_pct": 95.0
+                },
+                "post_treatment_effect": {
+                    "inferred_type": "numeric",
+                    "unique_count": 50,
+                    "unique_pct": 50.0
+                }
+            }
+        }
+        
+    def test_target_detection(self):
+        detector = TargetDetectionEngine(self.profile)
+        candidates = detector.detect_targets()
+        
+        # Should not recommend user_id (negative score)
+        candidate_names = [c["column"] for c in candidates]
+        self.assertNotIn("user_id", candidate_names)
+        
+        # Churn should be highly recommended (boolean + target naming keyword)
+        churn_candidate = next((c for c in candidates if c["column"] == "churn"), None)
+        self.assertIsNotNone(churn_candidate)
+        self.assertEqual(churn_candidate["confidence"], "High")
+        self.assertEqual(churn_candidate["detected_type"], "Classification")
+        
+        # Price should be regression
+        price_candidate = next((c for c in candidates if c["column"] == "price"), None)
+        self.assertIsNotNone(price_candidate)
+        self.assertEqual(price_candidate["detected_type"], "Regression")
+        
+        # Leakage warning on post_treatment_effect
+        leakage_candidate = next((c for c in candidates if c["column"] == "post_treatment_effect"), None)
+        self.assertIsNotNone(leakage_candidate)
+        self.assertTrue(leakage_candidate["leakage_warning"])
+
