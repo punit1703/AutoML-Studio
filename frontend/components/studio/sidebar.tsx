@@ -9,12 +9,21 @@ import {
   LayoutDashboard, 
   Globe, 
   Database,
-  Plus
+  Plus,
+  FolderOpen,
+  TableProperties,
+  TestTubes,
+  BrainCircuit,
+  Settings
 } from "lucide-react";
 import { motion } from "framer-motion";
 
 const sidebarNavItems = [
   { title: "Dashboard", href: "/studio/dashboard", icon: LayoutDashboard },
+  { title: "Projects", href: "/studio/projects", icon: FolderOpen },
+  { title: "Datasets", href: "/studio/datasets", icon: TableProperties },
+  { title: "Experiments", href: "/studio/experiments", icon: TestTubes },
+  { title: "Models & Pipelines", href: "/studio/models", icon: BrainCircuit },
   { title: "Prediction Apps", href: "/studio/apps", icon: Globe },
 ];
 
@@ -80,6 +89,16 @@ export function StudioSidebar() {
           );
         })}
       </nav>
+      
+      <div className="px-3 py-2 border-t border-border">
+        <Link
+          href="/studio/settings"
+          className="group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <Settings className="w-4 h-4 text-muted-foreground group-hover:text-foreground" />
+          Settings
+        </Link>
+      </div>
       
       <div className="p-4 border-t border-border text-xs font-mono text-muted-foreground">
         <div className="flex items-center gap-2 mb-2">

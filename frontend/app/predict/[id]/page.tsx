@@ -123,7 +123,6 @@ export default function PredictionAppPage() {
       <div key={name}>
         <label className="block text-sm font-medium mb-1.5 flex items-center justify-between">
           {label}
-          {feat.optional && <span className="text-[10px] text-muted-foreground uppercase">Optional</span>}
         </label>
         
         {type === 'categorical' && options.length > 0 ? (

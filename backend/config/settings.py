@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'notebooks',
     'deployments',
     'drf_spectacular',
+    'jobs',
 ]
 
 MIDDLEWARE = [
@@ -190,3 +191,5 @@ LOGGING = {
 }
 
 AUTH_USER_MODEL = 'authentication.User'
+
+

@@ -80,3 +80,49 @@ class DatasetAPITests(APITestCase):
         merged_ds = Dataset.objects.get(id=merge_response.data['dataset_id'])
         self.assertEqual(merged_ds.row_count, 4)
         self.assertEqual(merged_ds.column_count, 3) # id, val, MyLabel
+
+    def test_empty_csv_upload(self):
+        empty_file = SimpleUploadedFile("empty.csv", b"", content_type="text/csv")
+        data = {'project_id': self.project.id, 'file': empty_file}
+        response = self.client.post('/api/v1/datasets/', data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("empty", str(response.data).lower())
+        
+    def test_malformed_csv_upload(self):
+        malformed_csv = b"col1,col2\nval1,val2,val3\nval4,val5"
+        malformed_file = SimpleUploadedFile("malformed.csv", malformed_csv, content_type="text/csv")
+        data = {'project_id': self.project.id, 'file': malformed_file}
+        response = self.client.post('/api/v1/datasets/', data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        
+    def test_duplicate_columns_upload(self):
+        dup_csv = b"id,val,val\n1,10,20\n2,30,40\n"
+        dup_file = SimpleUploadedFile("dup.csv", dup_csv, content_type="text/csv")
+        data = {'project_id': self.project.id, 'file': dup_file}
+        response = self.client.post('/api/v1/datasets/', data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Duplicate column names detected", str(response.data))
+
+    def test_missing_headers_upload(self):
+        missing_headers_csv = b"id,,val\n1,2,3\n"
+        missing_file = SimpleUploadedFile("missing.csv", missing_headers_csv, content_type="text/csv")
+        data = {'project_id': self.project.id, 'file': missing_file}
+        response = self.client.post('/api/v1/datasets/', data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Missing or empty column headers", str(response.data))
+
+    def test_completely_empty_column(self):
+        empty_col_csv = b"id,val,empty_col\n1,10,\n2,20,\n"
+        empty_col_file = SimpleUploadedFile("empty_col.csv", empty_col_csv, content_type="text/csv")
+        data = {'project_id': self.project.id, 'file': empty_col_file}
+        response = self.client.post('/api/v1/datasets/', data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("completely empty", str(response.data).lower())
+
+    def test_completely_empty_row(self):
+        empty_row_csv = b"id,val\n1,10\n,\n2,20\n"
+        empty_row_file = SimpleUploadedFile("empty_row.csv", empty_row_csv, content_type="text/csv")
+        data = {'project_id': self.project.id, 'file': empty_row_file}
+        response = self.client.post('/api/v1/datasets/', data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("completely empty rows", str(response.data).lower())

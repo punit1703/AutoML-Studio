@@ -29,4 +29,28 @@ api.interceptors.response.use(
   }
 );
 
+export const downloadFile = async (url: string, filename: string) => {
+  try {
+    const response = await api.get(url, { responseType: 'blob' });
+    const blob = new Blob([response.data]);
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+    return true;
+  } catch (error: any) {
+    console.error('Download failed:', error);
+    if (error.response?.status === 401) {
+      alert("Session expired. Please log in again to download.");
+    } else {
+      alert("Failed to download file. Please try again.");
+    }
+    return false;
+  }
+};
+
 export default api;

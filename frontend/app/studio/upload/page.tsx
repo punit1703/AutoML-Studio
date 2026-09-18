@@ -49,11 +49,22 @@ export default function DatasetUploadPage() {
   };
 
   const processFiles = async (files: File[]) => {
-    if (files.length === 1) {
-      const size = (files[0].size / (1024 * 1024)).toFixed(2) + " MB";
-      setFileDetails({ name: files[0].name, size });
+    // Phase 1: Only allow CSV files
+    const csvFiles = files.filter(f => f.name.toLowerCase().endsWith('.csv'));
+    
+    if (csvFiles.length === 0) {
+        alert("Only CSV files are supported for this version.");
+        setUploadState("idle");
+        return;
+    }
+    
+    const validFiles = csvFiles;
+
+    if (validFiles.length === 1) {
+      const size = (validFiles[0].size / (1024 * 1024)).toFixed(2) + " MB";
+      setFileDetails({ name: validFiles[0].name, size });
     } else {
-      setFileDetails({ name: `${files.length} files selected`, size: "Multi-file upload" });
+      setFileDetails({ name: `${validFiles.length} files selected`, size: "Multi-file upload" });
     }
     
     setUploadState("uploading");
@@ -74,7 +85,7 @@ export default function DatasetUploadPage() {
       setUploadProgress(30);
 
       const formData = new FormData();
-      files.forEach(file => {
+      validFiles.forEach(file => {
         formData.append('files', file);
       });
       formData.append('project_id', currentProjectId!);
@@ -103,6 +114,19 @@ export default function DatasetUploadPage() {
       setDatasetId(newDatasetId);
       setUploadState("success");
       
+      // Fetch dataset details for metadata display
+      try {
+        const dsRes = await api.get(`v1/datasets/${newDatasetId}/`);
+        setFileDetails((prev) => ({
+            ...prev!,
+            row_count: dsRes.data.row_count,
+            column_count: dsRes.data.column_count,
+            encoding: dsRes.data.detected_encoding || 'UTF-8'
+        }));
+      } catch (err) {
+        console.error("Failed to fetch dataset metadata");
+      }
+      
       // Fetch preview
       const previewRes = await api.get(`v1/datasets/${newDatasetId}/preview/?rows=5`);
       const preview = previewRes.data.preview;
@@ -112,10 +136,12 @@ export default function DatasetUploadPage() {
       }
       
       setTimeout(() => setUploadState("preview"), 1500);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Upload failed", error);
       setUploadState("idle");
-      alert("Upload failed. Ensure you are logged in.");
+      // Handle DRF validation error gracefully
+      const errorMsg = error.response?.data?.error || error.response?.data?.detail || (typeof error.response?.data === 'string' ? error.response?.data : "Upload failed. Please ensure the CSV is valid.");
+      alert(`Validation Error: ${Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg}`);
     }
   };
 
@@ -124,9 +150,10 @@ export default function DatasetUploadPage() {
 
   const handleRelationAction = (action: string) => {
     alert(`Action selected: ${action}. The platform will execute this relation strategy.`);
+    const dsId = relationRecommendation.datasets[0].id;
     setRelationRecommendation(null);
-    setDatasetId(relationRecommendation.datasets[0].id);
-    router.push("/studio/pipeline");
+    setDatasetId(dsId);
+    router.push(`/studio/datasets/${dsId}`);
   };
 
   const handleClassSeparatedMerge = async () => {
@@ -142,9 +169,10 @@ export default function DatasetUploadPage() {
         target_column_name: classSeparatedTargetName
       });
       
-      setDatasetId(res.data.dataset_id);
+      const dsId = res.data.dataset_id;
+      setDatasetId(dsId);
       setRelationRecommendation(null);
-      router.push("/studio/pipeline");
+      router.push(`/studio/datasets/${dsId}`);
     } catch (err: any) {
       alert("Merge failed: " + (err.response?.data?.error || err.message));
     } finally {
@@ -243,7 +271,7 @@ export default function DatasetUploadPage() {
                       type="file" 
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
                       onChange={handleFileSelect}
-                      accept=".csv,.json,.parquet"
+                      accept=".csv"
                       multiple
                     />
                     <button className="inline-flex items-center justify-center h-10 px-6 rounded-md bg-foreground text-background font-semibold text-sm hover:opacity-90 transition-all shadow-[0_0_15px_rgba(255,255,255,0.2)]">
@@ -320,6 +348,12 @@ export default function DatasetUploadPage() {
                     <div className="flex items-center gap-3 text-sm text-muted-foreground font-mono mt-1">
                       <span>{fileDetails?.size || "2.4 MB"}</span>
                       <span className="w-1 h-1 rounded-full bg-white/20" />
+                      <span>{((fileDetails as any)?.row_count || 0).toLocaleString()} rows</span>
+                      <span className="w-1 h-1 rounded-full bg-white/20" />
+                      <span>{(fileDetails as any)?.column_count || 0} cols</span>
+                      <span className="w-1 h-1 rounded-full bg-white/20" />
+                      <span>{(fileDetails as any)?.encoding || "UTF-8"}</span>
+                      <span className="w-1 h-1 rounded-full bg-white/20" />
                       <span className="text-success flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Validated</span>
                     </div>
                   </div>
@@ -329,10 +363,10 @@ export default function DatasetUploadPage() {
                     Upload Different File
                   </button>
                   <button 
-                    onClick={() => router.push("/studio/pipeline")}
+                    onClick={() => router.push(`/studio/datasets/${datasetId}`)}
                     className="px-4 py-2 rounded-md bg-primary text-background font-semibold text-sm hover:bg-primary/90 transition-all shadow-[0_0_15px_rgba(56,189,248,0.3)] flex items-center gap-2"
                   >
-                    Start Pipeline <ArrowRight className="w-4 h-4" />
+                    View Dataset Overview <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </CardContent>

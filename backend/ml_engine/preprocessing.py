@@ -55,7 +55,14 @@ class DataPreprocessingEngine:
             
             # Also drop constant columns
             nunique = self.df[col].nunique()
-            if is_id or is_datetime or nunique < 2 or (nunique == len(self.df) and self.df[col].dtype == 'object'):
+            
+            is_text_feature = False
+            if self.df[col].dtype == 'object':
+                non_null_vals = self.df[col].dropna().astype(str)
+                if not non_null_vals.empty and non_null_vals.str.len().mean() > 30:
+                    is_text_feature = True
+
+            if is_id or is_datetime or nunique < 2 or (nunique == len(self.df) and self.df[col].dtype == 'object' and not is_text_feature):
                 cols_to_drop.append(col)
                 
         if cols_to_drop:

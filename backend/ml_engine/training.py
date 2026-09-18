@@ -3,7 +3,8 @@ import numpy as np
 import time
 import os
 import joblib
-from sklearn.model_selection import train_test_split, RandomizedSearchCV, StratifiedKFold, KFold
+import optuna
+from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold, KFold
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.preprocessing import LabelEncoder, StandardScaler, OneHotEncoder
@@ -185,11 +186,17 @@ class ModelTrainingEngine:
             
         return models
 
-    def train_and_evaluate(self):
+    def train_and_evaluate(self, progress_callback=None):
+        if progress_callback: progress_callback("Detecting problem type", 15)
         problem_type = self._detect_problem_type()
+        
+        if progress_callback: progress_callback("Preparing data", 25)
         X_train, X_test, y_train, y_test = self._prepare_data(problem_type)
+        
+        if progress_callback: progress_callback("Building preprocessing pipeline", 35)
         preprocessor, num_cols, cat_cols, text_cols = self._build_preprocessor()
         
+        if progress_callback: progress_callback("Setting up models", 45)
         if problem_type == 'regression':
             models = self._get_regression_models(preprocessor)
             cv_splitter = KFold(n_splits=3, shuffle=True, random_state=42)
@@ -203,17 +210,47 @@ class ModelTrainingEngine:
         best_model_name = ""
         best_model_metrics = {}
         
-        search_budget = 3  
+        search_budget = 3  # Increase this for production, keep low for testing
+        total_models = len(models)
         
-        for name, (base_model, param_grid) in models.items():
+        for idx, (name, (base_model, param_grid)) in enumerate(models.items()):
+            if progress_callback:
+                progress_val = 50 + int(40 * (idx / total_models))
+                progress_callback(f"Training {name}", progress_val)
+                
             start_time = time.time()
             try:
                 if param_grid:
-                    search = RandomizedSearchCV(base_model, param_distributions=param_grid, 
-                                                n_iter=search_budget, cv=cv_splitter, n_jobs=None, random_state=42)
-                    search.fit(X_train, y_train)
-                    model = search.best_estimator_
-                    cv_score = search.best_score_
+                    def objective(trial):
+                        # Construct parameters for this trial based on param_grid
+                        params = {}
+                        for p_name, p_values in param_grid.items():
+                            if isinstance(p_values, list):
+                                if all(isinstance(v, int) for v in p_values if v is not None and v != 'all'):
+                                    # Categorical choice for integers/strings
+                                    params[p_name] = trial.suggest_categorical(p_name, p_values)
+                                elif all(isinstance(v, float) for v in p_values):
+                                    params[p_name] = trial.suggest_categorical(p_name, p_values)
+                                else:
+                                    params[p_name] = trial.suggest_categorical(p_name, p_values)
+                        
+                        model = base_model
+                        model.set_params(**params)
+                        
+                        scoring = 'r2' if problem_type == 'regression' else 'accuracy'
+                        scores = cross_val_score(model, X_train, y_train, cv=cv_splitter, scoring=scoring, n_jobs=-1)
+                        return scores.mean()
+
+                    # Optimize
+                    optuna.logging.set_verbosity(optuna.logging.WARNING)
+                    study = optuna.create_study(direction='maximize')
+                    study.optimize(objective, n_trials=search_budget, timeout=300)
+                    
+                    # Best model
+                    model = base_model
+                    model.set_params(**study.best_params)
+                    model.fit(X_train, y_train)
+                    cv_score = study.best_value
                 else:
                     model = base_model
                     model.fit(X_train, y_train)
@@ -261,8 +298,10 @@ class ModelTrainingEngine:
                     'error': str(e)
                 })
                 
+        if progress_callback: progress_callback("Saving best model", 90)
+                
         # Save ONLY the best model
-        model_filename = f"best_model_pipeline.joblib"
+        model_filename = f"pipeline.pkl"
         model_path = os.path.join(self.model_save_dir, model_filename)
         if best_overall_model:
             joblib.dump(best_overall_model, model_path)
@@ -273,7 +312,7 @@ class ModelTrainingEngine:
         features_schema = []
         for col in X_train.columns:
             dtype = X_train[col].dtype
-            feat = {"name": col, "type": "text", "optional": False}
+            feat = {"name": col, "type": "text", "optional": True}
             
             if col in text_cols:
                 feat["type"] = "long_text"
