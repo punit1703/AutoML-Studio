@@ -32,35 +32,8 @@ export default function ResultsPage() {
           if (projDeployments.length > 0) {
             setModelData(projDeployments[0]);
           } else {
-            // Mock data for UI demonstration if backend hasn't generated a deployment yet
-            setModelData({
-              model_name: "XGBoost Classifier",
-              dataset: res.data.primary_dataset_id,
-              schema: {
-                metrics: {
-                  accuracy: 0.942,
-                  f1_score: 0.938,
-                  precision: 0.951,
-                  recall: 0.925
-                },
-                training_time: 142, // seconds
-                feature_importance: [
-                  { feature: "age", importance: 0.35 },
-                  { feature: "income", importance: 0.25 },
-                  { feature: "credit_score", importance: 0.15 },
-                  { feature: "debt_ratio", importance: 0.12 },
-                  { feature: "dependents", importance: 0.08 },
-                  { feature: "employment_years", importance: 0.05 }
-                ],
-                other_models: [
-                  { name: "Random Forest", accuracy: 0.915 },
-                  { name: "Logistic Regression", accuracy: 0.842 },
-                  { name: "LightGBM", accuracy: 0.931 }
-                ]
-              }
-            });
+            setModelData(null);
           }
-        }
       } catch (error) {
         console.error("Failed to fetch results", error);
       } finally {

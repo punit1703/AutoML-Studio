@@ -285,16 +285,7 @@ class ModelTrainingEngine:
                     'error': str(e)
                 })
                 
-        if progress_callback: progress_callback("Saving best model", 90)
-                
-        # Save ONLY the best model
-        model_filename = f"pipeline.pkl"
-        model_path = os.path.join(self.model_save_dir, model_filename)
-        if best_overall_model:
-            joblib.dump(best_overall_model, model_path)
-            
-        relative_path = os.path.join(os.path.basename(os.path.dirname(self.model_save_dir)), os.path.basename(self.model_save_dir), model_filename).replace("\\", "/")
-        
+        if progress_callback: progress_callback("Explaining features", 90)        
         # Build smart feature schema for dynamic frontend forms
         features_schema = []
         for col in X_train.columns:
@@ -335,8 +326,6 @@ class ModelTrainingEngine:
             else:
                 modality = "tabular_text_hybrid"
         
-        if progress_callback: progress_callback("Explaining features", 90)
-                
         # Explainability for best model
         shap_summary = None
         if best_overall_model:
@@ -363,7 +352,7 @@ class ModelTrainingEngine:
                 "problem_type": self.problem_type,
                 "target_column": self.target_column,
                 "feature_columns": features_schema,
-                "training_dataset_rows": self.X.shape[0] if hasattr(self, 'X') else 0,
+                "training_dataset_rows": self.df.shape[0] if hasattr(self, 'df') else 0,
                 "primary_metric": best_model_metrics.get("primary_metric", ""),
                 "primary_score": best_model_metrics.get("primary_score", None),
                 "preprocessing_version": "1.0",

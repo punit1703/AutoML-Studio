@@ -17,7 +17,7 @@ export default function PreprocessingReviewPage() {
 
   useEffect(() => {
     // In a real scenario, this fetches the generated preprocessing pipeline
-    // For now, we fallback to analyzing dataset or fetching project details to mock/get plan
+    // For now, we fallback to analyzing dataset or fetching project details to detect the plan
     const fetchPlan = async () => {
       try {
         const res = await api.get(`v1/projects/${projectId}/preprocessing_plan/`).catch(() => null);
@@ -30,7 +30,7 @@ export default function PreprocessingReviewPage() {
           if (dsId) {
             const analyzeRes = await api.get(`v1/datasets/${dsId}/analyze/`);
             const cols = analyzeRes.data.columns;
-            const simulatedPlan = {
+            const detectedPlan = {
               numerical: { imputation: "mean", scaling: "standard", columns: [] as string[] },
               categorical: { imputation: "mode", encoding: "one-hot", columns: [] as string[] },
               boolean: { imputation: "mode", encoding: "passthrough", columns: [] as string[] },
@@ -40,18 +40,18 @@ export default function PreprocessingReviewPage() {
             
             Object.entries(cols).forEach(([colName, details]: any) => {
               if (details.is_identifier || details.missing_pct > 90) {
-                simulatedPlan.dropped.push(colName);
+                detectedPlan.dropped.push(colName);
               } else if (details.inferred_type === 'numeric') {
-                simulatedPlan.numerical.columns.push(colName);
+                detectedPlan.numerical.columns.push(colName);
               } else if (details.inferred_type === 'categorical') {
-                simulatedPlan.categorical.columns.push(colName);
+                detectedPlan.categorical.columns.push(colName);
               } else if (details.inferred_type === 'boolean') {
-                simulatedPlan.boolean.columns.push(colName);
+                detectedPlan.boolean.columns.push(colName);
               } else if (details.inferred_type === 'text') {
-                simulatedPlan.text.columns.push(colName);
+                detectedPlan.text.columns.push(colName);
               }
             });
-            setPlan(simulatedPlan);
+            setPlan(detectedPlan);
           }
         }
       } catch (error) {
