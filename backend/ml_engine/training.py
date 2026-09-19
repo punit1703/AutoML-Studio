@@ -105,6 +105,10 @@ class ModelTrainingEngine:
         y_valid = y.loc[valid_idx]
         
         if problem_type != 'Regression':
+            class_counts = y_valid.value_counts()
+            if class_counts.min() < 5:
+                raise ValueError(f"Highly imbalanced or sparse classes detected. The minority class '{class_counts.idxmin()}' only has {class_counts.min()} samples, but at least 5 are required for cross-validation.")
+                
             le = LabelEncoder()
             y_valid = pd.Series(le.fit_transform(y_valid), index=valid_idx)
             self.label_encoder = le

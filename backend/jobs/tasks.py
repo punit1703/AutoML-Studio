@@ -58,8 +58,12 @@ def run_train_models_task(job_id, dataset_id, target_column, budget="standard"):
         job.save()
         
     except Exception as e:
-        error_msg = f"{str(e)}\n{traceback.format_exc()}"
-        handle_job_error(job_id, error_msg)
+        import logging
+        logger = logging.getLogger('django')
+        logger.error(f"Error in run_train_models_task: {e}\n{traceback.format_exc()}")
+        # Save a sanitized error message
+        from core.exceptions import sanitize_message
+        handle_job_error(job_id, sanitize_message(str(e)))
 
 def run_profile_dataset_task(job_id, dataset_id):
     try:
@@ -80,5 +84,8 @@ def run_profile_dataset_task(job_id, dataset_id):
         job.save()
         
     except Exception as e:
-        error_msg = f"{str(e)}\n{traceback.format_exc()}"
-        handle_job_error(job_id, error_msg)
+        import logging
+        logger = logging.getLogger('django')
+        logger.error(f"Error in run_profile_dataset_task: {e}\n{traceback.format_exc()}")
+        from core.exceptions import sanitize_message
+        handle_job_error(job_id, sanitize_message(str(e)))

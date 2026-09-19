@@ -19,12 +19,27 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Handle Network Errors / Backend Unavailable
+    if (!error.response) {
+      if (typeof window !== 'undefined') {
+        alert("Network Error: Backend is unavailable. Please check your connection.");
+      }
+      return Promise.reject(new Error("Backend is unavailable."));
+    }
+    
+    // Handle 401 Unauthorized
     if (error.response && error.response.status === 401) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('access_token');
-        window.location.href = '/login';
+        window.location.href = '/login?expired=true';
       }
     }
+    
+    // Handle 500 Internal Server Error generically if not handled by component
+    if (error.response && error.response.status >= 500) {
+      console.error("Internal Server Error:", error.response.data);
+    }
+    
     return Promise.reject(error);
   }
 );

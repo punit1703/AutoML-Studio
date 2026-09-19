@@ -121,6 +121,16 @@ class DatasetService:
         if df.isna().all(axis=1).any():
             raise ValidationError("The dataset contains completely empty rows.")
             
+        # 5. Row and Column Minimum Constraints
+        if len(df) < 2:
+            raise ValidationError("Dataset must contain at least two rows of data for machine learning.")
+        if len(df.columns) < 2:
+            raise ValidationError("Dataset must contain at least two columns (features and a target).")
+            
+        # 6. All-Constant Dataset (Every single column has only 1 unique value)
+        if all(df[col].nunique(dropna=True) <= 1 for col in df.columns):
+            raise ValidationError("All columns in the dataset have only one unique value. Machine learning requires variation in data.")
+            
         # Strip whitespace from column names
         df.columns = df.columns.str.strip()
         

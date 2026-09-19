@@ -79,13 +79,21 @@ class DataPreprocessingEngine:
                     self.df[col] = le.fit_transform(self.df[col].astype(str))
         return self
         
-    def encode_one_hot(self, columns=None):
+    def encode_one_hot(self, columns=None, max_cardinality=100):
         if columns is None:
             columns = self.df.select_dtypes(include=['object', 'category']).columns.tolist()
         if columns:
             existing_cols = [col for col in columns if col in self.df.columns]
-            if existing_cols:
-                self.df = pd.get_dummies(self.df, columns=existing_cols, drop_first=True)
+            to_encode = []
+            for col in existing_cols:
+                if self.df[col].nunique() > max_cardinality:
+                    # Drop high-cardinality categorical variables safely instead of crashing OHE
+                    self.df.drop(columns=[col], inplace=True)
+                else:
+                    to_encode.append(col)
+                    
+            if to_encode:
+                self.df = pd.get_dummies(self.df, columns=to_encode, drop_first=True, dummy_na=True)
         return self
         
     def scale_features(self, method='standard', columns=None):

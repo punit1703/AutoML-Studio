@@ -33,6 +33,14 @@ class DeploymentViewSet(viewsets.ModelViewSet):
         try:
             df = pd.DataFrame(input_data)
             
+            # Validate schema
+            expected_features = deployment.schema.get('features', [])
+            if expected_features:
+                expected_cols = [f['name'] for f in expected_features]
+                missing_cols = [col for col in expected_cols if col not in df.columns]
+                if missing_cols:
+                    return Response({"error": f"Schema mismatch. Missing columns: {', '.join(missing_cols)}"}, status=status.HTTP_400_BAD_REQUEST)
+            
             # Here we need a full pipeline (preprocessing + model). 
             # In our new training refactor, we will save the entire pipeline as a single joblib file.
             model_pipeline = joblib.load(deployment.model_path)
@@ -47,4 +55,5 @@ class DeploymentViewSet(viewsets.ModelViewSet):
             
             return Response({"predictions": pred_list}, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response({"error": f"Prediction failed: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+            from core.exceptions import sanitize_message
+            return Response({"error": f"Prediction failed: {sanitize_message(str(e))}"}, status=status.HTTP_400_BAD_REQUEST)
