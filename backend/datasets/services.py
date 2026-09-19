@@ -151,8 +151,8 @@ class DatasetService:
         metadata = profiler.profile()
 
         
-        dataset.row_count = metadata.get("row_count")
-        dataset.column_count = metadata.get("column_count")
+        dataset.row_count = metadata.get("dataset", {}).get("rows")
+        dataset.column_count = metadata.get("dataset", {}).get("columns")
         dataset.metadata = metadata
         dataset.save(update_fields=['row_count', 'column_count', 'metadata'])
         

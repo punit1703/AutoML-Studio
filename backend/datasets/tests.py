@@ -140,7 +140,9 @@ class DatasetAPITests(APITestCase):
 
     def test_end_to_end_workflow(self):
         # 1. Upload CSV
-        csv_content = b"feature1,feature2,target\n1.5,2.5,A\n2.5,3.5,B\n1.0,2.0,A\n3.0,4.0,B\n1.5,2.5,A\n2.5,3.5,B\n"
+        header = "feature1,feature2,target\n"
+        rows = "1.5,2.5,A\n2.5,3.5,B\n1.0,2.0,A\n3.0,4.0,B\n" * 5
+        csv_content = (header + rows).encode('utf-8')
         test_file = SimpleUploadedFile("e2e.csv", csv_content, content_type="text/csv")
         data = {'project_id': self.project.id, 'file': test_file}
         
@@ -172,6 +174,8 @@ class DatasetAPITests(APITestCase):
         
         # Job should now be COMPLETED because training ran synchronously
         job_resp = self.client.get(f'/api/v1/datasets/{dataset_id}/active_job/')
+        if job_resp.data['status'] != 'COMPLETED':
+            print("Job failed with error:", job_resp.data.get('error_message'))
         self.assertEqual(job_resp.data['status'], 'COMPLETED')
         self.assertIsNotNone(job_resp.data.get('progress'))
         self.assertEqual(job_resp.data['progress'], 100)

@@ -1,0 +1,101 @@
+text_col,value,target
+This is a good product,1.81803112263518,Neutral
+Terrible service,1.220976296097237,Positive
+Average quality,-0.7836929735846322,Neutral
+Excellent experience,0.1308598939419861,Positive
+Do not buy,1.2234129720423683,Negative
+This is a good product,-1.2468361052429888,Neutral
+Terrible service,1.2714641985069797,Negative
+Average quality,-0.10412531856241017,Positive
+Excellent experience,1.7929671791518835,Positive
+Do not buy,-0.39045707862837403,Neutral
+This is a good product,-1.5855184929610575,Negative
+Terrible service,-0.6480411439240338,Neutral
+Average quality,-0.5434437710679394,Neutral
+Excellent experience,-0.7997881058959811,Negative
+Do not buy,0.2099203747191573,Neutral
+This is a good product,1.2289460131625345,Neutral
+Terrible service,0.6258978003428444,Negative
+Average quality,-0.8133759595589911,Negative
+Excellent experience,1.1785205961707717,Neutral
+Do not buy,-0.702402784169015,Neutral
+This is a good product,-1.1807942982673671,Positive
+Terrible service,-0.1060892703013954,Positive
+Average quality,0.44516990933614703,Positive
+Excellent experience,0.5123822392332558,Neutral
+Do not buy,-0.28978299615075265,Negative
+This is a good product,0.3586691054550466,Neutral
+Terrible service,-0.26386695305525826,Positive
+Average quality,0.19936458968593493,Neutral
+Excellent experience,0.23126586660366405,Negative
+Do not buy,-1.0369430330881888,Positive
+This is a good product,1.2501563275458634,Neutral
+Terrible service,2.4407742702830357,Positive
+Average quality,1.918626415518876,Positive
+Excellent experience,-0.32087084614523603,Negative
+Do not buy,0.7402406347331552,Neutral
+This is a good product,-0.5286767234977554,Positive
+Terrible service,0.9055875637699153,Neutral
+Average quality,-1.9182364785073414,Neutral
+Excellent experience,2.032159530051953,Negative
+Do not buy,-0.38785760030749866,Negative
+This is a good product,-0.3783454776043988,Neutral
+Terrible service,1.4872767683485626,Positive
+Average quality,-0.056594907065337,Neutral
+Excellent experience,0.016500933093157998,Negative
+Do not buy,-0.1601653465272738,Positive
+This is a good product,0.6274577942694788,Negative
+Terrible service,-1.1881073737319403,Neutral
+Average quality,-0.7811108102691326,Positive
+Excellent experience,0.9137188491785121,Negative
+Do not buy,-1.107078647648021,Negative
+This is a good product,1.3038734651916621,Positive
+Terrible service,-0.09785149431864344,Neutral
+Average quality,-0.7868235327699749,Negative
+Excellent experience,0.6240456969173812,Negative
+Do not buy,1.8154979101720066,Positive
+This is a good product,1.1900416149233952,Neutral
+Terrible service,-2.3116312961311407,Neutral
+Average quality,0.14020819488916697,Positive
+Excellent experience,0.02185710125611052,Positive
+Do not buy,-1.2337739864884218,Neutral
+This is a good product,-1.2582647588930655,Positive
+Terrible service,0.18804981714464447,Neutral
+Average quality,-0.9838740402201258,Neutral
+Excellent experience,-0.06668304410033975,Neutral
+Do not buy,1.8569965112446178,Positive
+This is a good product,-1.4677159802879638,Neutral
+Terrible service,-0.6838158137406275,Negative
+Average quality,0.027410242017689917,Negative
+Excellent experience,0.45712704351291167,Neutral
+Do not buy,-0.1970054841901904,Neutral
+This is a good product,-0.34587432484486474,Negative
+Terrible service,0.42129952723900815,Neutral
+Average quality,-0.6321499759439334,Positive
+Excellent experience,-0.6566978562583068,Neutral
+Do not buy,0.28107591513107105,Negative
+This is a good product,0.28482026928082443,Negative
+Terrible service,0.09863338467857245,Positive
+Average quality,-0.8414391491771414,Positive
+Excellent experience,-0.2629953540354277,Neutral
+Do not buy,-0.3051348368039717,Neutral
+This is a good product,-0.3112137990646103,Negative
+Terrible service,1.1636049642980197,Neutral
+Average quality,-0.7794793858981043,Neutral
+Excellent experience,0.21428335021845213,Neutral
+Do not buy,-0.1932492253239904,Positive
+This is a good product,-2.473710534134735,Neutral
+Terrible service,0.6538806439748328,Negative
+Average quality,-1.6389531721411865,Neutral
+Excellent experience,0.5710405062751887,Neutral
+Do not buy,-0.023282000072364795,Positive
+This is a good product,0.03351128385954433,Positive
+Terrible service,-1.1490250822088492,Negative
+Average quality,-2.0941701354597626,Positive
+Excellent experience,0.9447435249295656,Positive
+Do not buy,0.3075384261084732,Positive
+This is a good product,0.015709984244743826,Neutral
+Terrible service,-0.36519647966578395,Positive
+Average quality,0.2916227518444356,Neutral
+Excellent experience,0.7344226001595131,Positive
+Do not buy,1.0319175761412427,Negative

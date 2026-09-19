@@ -13,8 +13,8 @@ class ProjectAPITests(APITestCase):
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
         
-        self.project = Project.objects.create(user=self.user, title="My Project", description="Test Description")
-        self.other_project = Project.objects.create(user=self.other_user, title="Other Project")
+        self.project = Project.objects.create(user=self.user, title="My Project", description="Test Description", is_saved=True)
+        self.other_project = Project.objects.create(user=self.other_user, title="Other Project", is_saved=True)
 
     def test_list_projects_isolation(self):
         """Ensure users can only see their own projects."""
