@@ -18,7 +18,11 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+
+def health_check(request):
+    return JsonResponse({"status": "ok"})
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -27,6 +31,7 @@ urlpatterns = [
     path('api/v1/datasets/', include('datasets.urls')),
     path('api/v1/deployments/', include('deployments.urls')),
     path('api/v1/jobs/', include('jobs.urls')),
+    path('api/health/', health_check, name='health_check'),
     
     # OpenAPI Schema & Swagger
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
