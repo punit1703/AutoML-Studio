@@ -79,7 +79,7 @@ export default function DatasetOverviewPage() {
       </div>
 
       {/* High Level Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <Card className="bg-card border-border">
           <CardContent className="p-6">
             <div className="text-sm font-medium text-muted-foreground mb-2">Filename</div>
@@ -104,6 +104,14 @@ export default function DatasetOverviewPage() {
           <CardContent className="p-6">
             <div className="text-sm font-medium text-muted-foreground mb-2">File Size</div>
             <div className="text-3xl font-mono font-bold text-foreground">{ds.size_mb} MB</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card border-border">
+          <CardContent className="p-6">
+            <div className="text-sm font-medium text-muted-foreground mb-2">Target Status</div>
+            <div className={`text-xl font-mono font-bold truncate ${dataset.metadata?.target_column ? "text-success" : "text-warning"}`}>
+              {dataset.metadata?.target_column || "Not Selected"}
+            </div>
           </CardContent>
         </Card>
       </div>

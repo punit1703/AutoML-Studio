@@ -12,7 +12,7 @@ type UploadState = "idle" | "dragging" | "uploading" | "success" | "preview";
 
 export default function DatasetUploadPage() {
   const router = useRouter();
-  const { projectId, setProjectId, setDatasetId } = useAppContext();
+  const { projectId, setProjectId, datasetId, setDatasetId } = useAppContext();
   const [uploadState, setUploadState] = React.useState<UploadState>("idle");
   const [uploadProgress, setUploadProgress] = React.useState(0);
   const [fileDetails, setFileDetails] = React.useState<{ name: string; size: string } | null>(null);
@@ -366,7 +366,7 @@ export default function DatasetUploadPage() {
                     onClick={() => router.push(`/studio/datasets/${datasetId}`)}
                     className="px-4 py-2 rounded-md bg-primary text-background font-semibold text-sm hover:bg-primary/90 transition-all shadow-[0_0_15px_rgba(56,189,248,0.3)] flex items-center gap-2"
                   >
-                    View Dataset Overview <ArrowRight className="w-4 h-4" />
+                    Continue to Overview <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </CardContent>

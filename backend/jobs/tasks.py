@@ -22,12 +22,14 @@ def run_train_models_task(job_id, dataset_id, target_column, budget="standard"):
             
             # Map granular states correctly to JobStatus enum
             lower_stage = stage_name.lower()
-            if "preparing data" in lower_stage or "optimal model" in lower_stage:
-                job.status = JobStatus.PREPROCESSING
-            elif "training" in lower_stage or "model" in lower_stage:
+            if "training" in lower_stage or "model" in lower_stage:
                 job.status = JobStatus.TRAINING
-            elif "evaluat" in lower_stage or "saving" in lower_stage:
-                job.status = JobStatus.EVALUATION
+            elif "evaluat" in lower_stage:
+                job.status = JobStatus.EVALUATING
+            elif "explain" in lower_stage or "shap" in lower_stage:
+                job.status = JobStatus.EXPLAINING
+            elif "saving" in lower_stage or "exporting" in lower_stage:
+                job.status = JobStatus.EXPORTING
                 
             job.save(update_fields=['current_stage', 'progress', 'status'])
             
@@ -41,7 +43,18 @@ def run_train_models_task(job_id, dataset_id, target_column, budget="standard"):
         job.status = JobStatus.COMPLETED
         job.current_stage = "Pipeline generated successfully"
         job.progress = 100
-        job.result = result
+        
+        import uuid
+        def _convert_uuids(obj):
+            if isinstance(obj, dict):
+                return {k: _convert_uuids(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [_convert_uuids(i) for i in obj]
+            elif isinstance(obj, uuid.UUID):
+                return str(obj)
+            return obj
+            
+        job.result = _convert_uuids(result)
         job.save()
         
     except Exception as e:
@@ -61,8 +74,8 @@ def run_profile_dataset_task(job_id, dataset_id):
         from datasets.services import DatasetService
         DatasetService._sync_extract_metadata(dataset)
         
-        job.status = JobStatus.COMPLETED
-        job.current_stage = "Profiling completed"
+        job.status = JobStatus.WAITING_FOR_TARGET
+        job.current_stage = "Waiting for target column selection"
         job.progress = 100
         job.save()
         

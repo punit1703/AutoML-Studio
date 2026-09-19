@@ -61,8 +61,8 @@ export default function TargetSelectionPage() {
         target_column: selectedTarget,
         problem_type: problemType
       });
-      // Proceed to AI Analysis workflow
-      router.push(`/studio/projects/${projectId}/ai-analysis`);
+      // Proceed to Preprocessing Review
+      router.push(`/studio/projects/${projectId}/preprocessing`);
     } catch (error) {
       console.error("Failed to set target column", error);
       setIsSubmitting(false);

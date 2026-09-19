@@ -20,10 +20,9 @@ export default function DashboardPage() {
   const [models, setModels] = useState<any[]>([]);
   
   const [stats, setStats] = useState([
-    { title: "Total Models", value: "0", icon: Cpu, trend: "Trained models" },
+    { title: "Total Models", value: "0", icon: Cpu, trend: "" },
     { title: "Active Datasets", value: "0", icon: Database, trend: "0 KB total" },
-    { title: "Compute Time", value: "0h", icon: Clock, trend: "Used resources" },
-    { title: "System Status", value: "Checking...", icon: Activity, trend: "Pinging clusters" },
+    { title: "System Status", value: "Checking...", icon: Activity, trend: "" },
   ]);
 
   useEffect(() => {
@@ -39,10 +38,9 @@ export default function DashboardPage() {
 
         if (statsRes?.data) {
           setStats([
-            { title: "Total Models", value: statsRes.data.total_models.toString(), icon: Cpu, trend: "Trained models" },
+            { title: "Total Models", value: statsRes.data.total_models.toString(), icon: Cpu, trend: "" },
             { title: "Active Datasets", value: statsRes.data.active_datasets.toString(), icon: Database, trend: statsRes.data.total_size_str },
-            { title: "Compute Time", value: statsRes.data.compute_time, icon: Clock, trend: "Used resources" },
-            { title: "System Status", value: statsRes.data.system_status, icon: Activity, trend: "All clusters online" },
+            { title: "System Status", value: statsRes.data.system_status, icon: Activity, trend: "Online" },
           ]);
         }
 
@@ -102,7 +100,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {stats.map((stat, idx) => {
           const Icon = stat.icon;
           return (
@@ -125,9 +123,11 @@ export default function DashboardPage() {
                   ) : (
                     <>
                       <div className="text-2xl font-bold font-mono">{stat.value}</div>
-                      <p className="text-xs text-muted-foreground mt-1 font-mono">
-                        {stat.trend}
-                      </p>
+                      {stat.trend && (
+                        <p className="text-xs text-muted-foreground mt-1 font-mono">
+                          {stat.trend}
+                        </p>
+                      )}
                     </>
                   )}
                 </CardContent>
@@ -138,52 +138,25 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recent Projects */}
-        <Card className="bg-card border-border shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <FolderOpen className="w-5 h-5 text-primary" />
-              Recent Projects
-            </CardTitle>
-            <Link href="/studio/projects" className="text-sm text-primary hover:underline">View All</Link>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {projects.length === 0 ? (
-              <div className="text-sm text-muted-foreground text-center py-6">No projects yet.</div>
-            ) : (
-              projects.map(project => (
-                <div key={project.id} onClick={() => resumeProject(project)} className="flex items-center justify-between p-3 rounded-lg border border-border hover:border-primary/50 cursor-pointer bg-muted/30 transition-colors">
-                  <div>
-                    <div className="font-semibold text-sm text-foreground">{project.title}</div>
-                    <div className="text-xs text-muted-foreground">{new Date(project.created_at).toLocaleDateString()}</div>
-                  </div>
-                  <Play className="w-4 h-4 text-muted-foreground hover:text-primary" />
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Recent Experiments */}
+        {/* Recent Training Jobs */}
         <Card className="bg-card border-border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <TestTubes className="w-5 h-5 text-primary" />
-              Recent Experiments
+              Recent Training Jobs
             </CardTitle>
-            <Link href="/studio/experiments" className="text-sm text-primary hover:underline">View All</Link>
           </CardHeader>
           <CardContent className="space-y-3">
             {experiments.length === 0 ? (
-              <div className="text-sm text-muted-foreground text-center py-6">No experiments run yet.</div>
+              <div className="text-sm text-muted-foreground text-center py-6">No training jobs run yet.</div>
             ) : (
               experiments.map(exp => (
-                <div key={exp.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30">
+                <div key={exp.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30 hover:border-primary/50 transition-colors">
                   <div>
                     <div className="font-semibold text-sm text-foreground">{exp.job_type.replace('_', ' ').toUpperCase()}</div>
                     <div className="text-xs text-muted-foreground">{exp.current_stage || exp.status}</div>
                   </div>
-                  <div className={`text-xs px-2 py-1 rounded-full ${exp.status === 'COMPLETED' ? 'bg-success/20 text-success' : 'bg-primary/20 text-primary'}`}>
+                  <div className={`text-xs px-2 py-1 rounded-full ${exp.status === 'COMPLETED' ? 'bg-success/20 text-success' : exp.status === 'FAILED' ? 'bg-destructive/20 text-destructive' : 'bg-primary/20 text-primary'}`}>
                     {exp.status}
                   </div>
                 </div>

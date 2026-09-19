@@ -116,6 +116,17 @@ class DatasetViewSet(viewsets.ModelViewSet):
             
         dataset.save(update_fields=['metadata'])
         
+        # Update MLJob state
+        from jobs.models import MLJob, JobStatus
+        try:
+            job = MLJob.objects.filter(dataset=dataset).first()
+            if job:
+                job.status = JobStatus.WAITING_FOR_REVIEW
+                job.current_stage = "Target confirmed, waiting for review"
+                job.save()
+        except Exception:
+            pass
+        
         return Response({
             "status": "success", 
             "target_column": dataset.metadata['target_column'],
@@ -271,3 +282,20 @@ class DatasetViewSet(viewsets.ModelViewSet):
             return response
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['get'])
+    def active_job(self, request, pk=None):
+        dataset = self.get_object()
+        from jobs.models import MLJob
+        job = MLJob.objects.filter(dataset=dataset).first()
+        
+        if not job:
+            return Response({"error": "No active job found for this dataset."}, status=status.HTTP_404_NOT_FOUND)
+            
+        return Response({
+            "id": str(job.id),
+            "status": job.status,
+            "progress": job.progress,
+            "current_stage": job.current_stage,
+            "error_message": job.error_message
+        }, status=status.HTTP_200_OK)

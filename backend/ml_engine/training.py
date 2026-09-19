@@ -252,6 +252,9 @@ class ModelTrainingEngine:
                     
                 training_time = time.time() - start_time
                 
+                if progress_callback:
+                    progress_callback(f"Evaluating {name}", progress_val + 2)
+                    
                 eval_results = evaluator.evaluate(model, X_test, y_test)
                 eval_results["cv_score"] = float(cv_score)
                 
@@ -328,7 +331,7 @@ class ModelTrainingEngine:
             else:
                 modality = "tabular_text_hybrid"
         
-        if progress_callback: progress_callback("Saving best model", 90)
+        if progress_callback: progress_callback("Explaining features", 90)
                 
         # Explainability for best model
         shap_summary = None
@@ -337,6 +340,7 @@ class ModelTrainingEngine:
             explainer = ModelExplainer(best_overall_model, X_test)
             shap_summary = explainer.explain()
                 
+        if progress_callback: progress_callback("Exporting model artifact", 92)
         # Save ONLY the best model
         model_filename = f"pipeline.pkl"
         model_path = os.path.join(self.model_save_dir, model_filename)

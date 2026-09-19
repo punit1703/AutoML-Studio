@@ -186,8 +186,8 @@ class DatasetService:
         job = MLJob.objects.create(
             dataset=dataset,
             job_type=JobType.PROFILE_DATASET,
-            status=JobStatus.QUEUED,
-            current_stage="Queued for profiling"
+            status=JobStatus.VALIDATING,
+            current_stage="Validating dataset"
         )
         
         from jobs.tasks import run_profile_dataset_task
@@ -227,7 +227,7 @@ class DatasetService:
             job = MLJob.objects.create(
                 dataset=dataset,
                 job_type=JobType.PROFILE_DATASET,
-                status=JobStatus.QUEUED,
+                status=JobStatus.UPLOADED,
                 current_stage="Queued for profiling"
             )
             from jobs.tasks import run_profile_dataset_task
@@ -333,7 +333,7 @@ class DatasetService:
         job = MLJob.objects.create(
             dataset=merged_dataset,
             job_type=JobType.PROFILE_DATASET,
-            status=JobStatus.QUEUED,
+            status=JobStatus.UPLOADED,
             current_stage="Queued for profiling"
         )
         from jobs.tasks import run_profile_dataset_task
@@ -440,12 +440,18 @@ class DatasetService:
 
     @staticmethod
     def run_pipeline(dataset: Dataset, target_column: str, budget: str = 'standard'):
-        job = MLJob.objects.create(
-            dataset=dataset,
-            job_type=JobType.TRAIN_MODEL,
-            status=JobStatus.QUEUED,
-            current_stage="Queued for training"
-        )
+        job = MLJob.objects.filter(dataset=dataset).first()
+        if not job:
+            job = MLJob.objects.create(
+                dataset=dataset,
+                job_type=JobType.GENERATE_PIPELINE,
+                status=JobStatus.TRAINING,
+                current_stage="Preparing to train models"
+            )
+        else:
+            job.status = JobStatus.TRAINING
+            job.current_stage = "Preparing to train models"
+            job.save()
         from jobs.tasks import run_train_models_task
         thread = threading.Thread(target=run_train_models_task, args=(job.id, dataset.id, target_column, budget))
         thread.start()

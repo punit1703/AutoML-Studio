@@ -9,6 +9,14 @@ User = get_user_model()
 
 class DatasetAPITests(APITestCase):
     def setUp(self):
+        from unittest.mock import patch
+        
+        def mock_thread_start(self_thread):
+            self_thread._target(*self_thread._args, **self_thread._kwargs)
+            
+        self.thread_patcher = patch('threading.Thread.start', new=mock_thread_start)
+        self.thread_patcher.start()
+        
         self.user = User.objects.create_user(email='test@test.com', password='password123')
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
@@ -27,6 +35,9 @@ class DatasetAPITests(APITestCase):
             row_count=2,
             column_count=2
         )
+
+    def tearDown(self):
+        self.thread_patcher.stop()
 
     def test_list_datasets(self):
         response = self.client.get('/api/v1/datasets/')
@@ -126,3 +137,41 @@ class DatasetAPITests(APITestCase):
         response = self.client.post('/api/v1/datasets/', data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("completely empty rows", str(response.data).lower())
+
+    def test_end_to_end_workflow(self):
+        # 1. Upload CSV
+        csv_content = b"feature1,feature2,target\n1.5,2.5,A\n2.5,3.5,B\n1.0,2.0,A\n3.0,4.0,B\n1.5,2.5,A\n2.5,3.5,B\n"
+        test_file = SimpleUploadedFile("e2e.csv", csv_content, content_type="text/csv")
+        data = {'project_id': self.project.id, 'file': test_file}
+        
+        response = self.client.post('/api/v1/datasets/', data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        dataset_id = response.data['id']
+        
+        # Job should be WAITING_FOR_TARGET because profiling ran synchronously
+        job_resp = self.client.get(f'/api/v1/datasets/{dataset_id}/active_job/')
+        self.assertEqual(job_resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(job_resp.data['status'], 'WAITING_FOR_TARGET')
+        
+        # 2. Set Target
+        set_target_data = {
+            'target_column': 'target',
+            'problem_type': 'Classification'
+        }
+        res = self.client.post(f'/api/v1/datasets/{dataset_id}/set_target/', set_target_data, format='json')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        
+        # Job should now be WAITING_FOR_REVIEW
+        job_resp = self.client.get(f'/api/v1/datasets/{dataset_id}/active_job/')
+        self.assertEqual(job_resp.data['status'], 'WAITING_FOR_REVIEW')
+        
+        # 3. Run Pipeline
+        pipeline_data = {'target_column': 'target', 'budget': 'fast'}
+        res = self.client.post(f'/api/v1/datasets/{dataset_id}/run_pipeline/', pipeline_data, format='json')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        
+        # Job should now be COMPLETED because training ran synchronously
+        job_resp = self.client.get(f'/api/v1/datasets/{dataset_id}/active_job/')
+        self.assertEqual(job_resp.data['status'], 'COMPLETED')
+        self.assertIsNotNone(job_resp.data.get('progress'))
+        self.assertEqual(job_resp.data['progress'], 100)
