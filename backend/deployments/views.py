@@ -8,14 +8,14 @@ import joblib
 
 class DeploymentViewSet(viewsets.ModelViewSet):
     serializer_class = DeploymentSerializer
-    permission_classes = [permissions.AllowAny] # Predict endpoint should be public for shareable link, or we can restrict viewset and open only predict.
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         if self.request.user.is_authenticated:
             return Deployment.objects.filter(project__user=self.request.user)
         return Deployment.objects.none()
 
-    @action(detail=True, methods=['post'], permission_classes=[permissions.AllowAny])
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def predict(self, request, pk=None):
         try:
             deployment = Deployment.objects.get(pk=pk)

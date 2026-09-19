@@ -576,9 +576,12 @@ class DatasetService:
 
     @staticmethod
     def get_model_path(dataset: Dataset, model_name: str):
+        import re
         if not model_name:
             raise ValidationError("model_name is required.")
-        filename = f"{model_name.replace(' ', '_').lower()}.joblib"
+        # Prevent path traversal
+        clean_model_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', model_name)
+        filename = f"{clean_model_name.lower()}.joblib"
         file_path = os.path.join(settings.MEDIA_ROOT, 'models', str(dataset.id), filename)
         if not os.path.exists(file_path):
             raise ValidationError(f"Model '{model_name}' not found. Please train models first.")

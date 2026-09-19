@@ -13,8 +13,16 @@ def handle_job_error(job_id, error_message):
 
 def run_train_models_task(job_id, dataset_id, target_column, budget="standard"):
     try:
+        import logging
+        base_logger = logging.getLogger('django')
+        
         job = MLJob.objects.get(id=job_id)
         dataset = Dataset.objects.get(id=dataset_id)
+        
+        user_id = str(dataset.project.user.id) if dataset.project and dataset.project.user else 'system'
+        logger = logging.LoggerAdapter(base_logger, {'job_id': job_id, 'user_id': user_id})
+        
+        logger.info(f"Starting training pipeline for dataset {dataset_id}")
         
         def update_progress(stage_name, progress_val):
             job.current_stage = stage_name
@@ -32,6 +40,7 @@ def run_train_models_task(job_id, dataset_id, target_column, budget="standard"):
                 job.status = JobStatus.EXPORTING
                 
             job.save(update_fields=['current_stage', 'progress', 'status'])
+            logger.info(f"Progress update: {stage_name} ({progress_val}%)")
             
         update_progress("Starting model training", 10)
         
@@ -56,10 +65,12 @@ def run_train_models_task(job_id, dataset_id, target_column, budget="standard"):
             
         job.result = _convert_uuids(result)
         job.save()
+        logger.info(f"Completed training pipeline for dataset {dataset_id}")
         
     except Exception as e:
         import logging
-        logger = logging.getLogger('django')
+        base_logger = logging.getLogger('django')
+        logger = logging.LoggerAdapter(base_logger, {'job_id': job_id, 'user_id': 'system'})
         logger.error(f"Error in run_train_models_task: {e}\n{traceback.format_exc()}")
         # Save a sanitized error message
         from core.exceptions import sanitize_message
@@ -67,8 +78,16 @@ def run_train_models_task(job_id, dataset_id, target_column, budget="standard"):
 
 def run_profile_dataset_task(job_id, dataset_id):
     try:
+        import logging
+        base_logger = logging.getLogger('django')
+        
         job = MLJob.objects.get(id=job_id)
         dataset = Dataset.objects.get(id=dataset_id)
+        
+        user_id = str(dataset.project.user.id) if dataset.project and dataset.project.user else 'system'
+        logger = logging.LoggerAdapter(base_logger, {'job_id': job_id, 'user_id': user_id})
+        
+        logger.info(f"Starting profile task for dataset {dataset_id}")
         
         job.status = JobStatus.PROFILING
         job.current_stage = "Extracting dataset metadata"
@@ -83,9 +102,12 @@ def run_profile_dataset_task(job_id, dataset_id):
         job.progress = 100
         job.save()
         
+        logger.info(f"Finished profile task for dataset {dataset_id}")
+        
     except Exception as e:
         import logging
-        logger = logging.getLogger('django')
+        base_logger = logging.getLogger('django')
+        logger = logging.LoggerAdapter(base_logger, {'job_id': job_id, 'user_id': 'system'})
         logger.error(f"Error in run_profile_dataset_task: {e}\n{traceback.format_exc()}")
         from core.exceptions import sanitize_message
         handle_job_error(job_id, sanitize_message(str(e)))

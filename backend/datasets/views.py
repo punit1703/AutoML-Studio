@@ -46,7 +46,7 @@ class DatasetViewSet(viewsets.ModelViewSet):
         if not project_id or not files:
             return Response({"error": "project_id and files are required"}, status=status.HTTP_400_BAD_REQUEST)
             
-        project = get_object_or_404(Project, id=project_id)
+        project = get_object_or_404(Project, id=project_id, user=request.user)
         
         result = DatasetService.process_multiple_uploads(project, files)
         return Response(result, status=status.HTTP_200_OK)
@@ -61,7 +61,7 @@ class DatasetViewSet(viewsets.ModelViewSet):
         if not project_id or not dataset_ids or not classes:
             return Response({"error": "project_id, dataset_ids, and classes are required"}, status=status.HTTP_400_BAD_REQUEST)
             
-        project = get_object_or_404(Project, id=project_id)
+        project = get_object_or_404(Project, id=project_id, user=request.user)
         
         try:
             result = DatasetService.merge_class_separated(project, dataset_ids, classes, target_column_name)

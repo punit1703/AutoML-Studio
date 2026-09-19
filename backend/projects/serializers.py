@@ -10,6 +10,19 @@ class ProjectSerializer(serializers.ModelSerializer):
         model = Project
         fields = ['id', 'title', 'description', 'created_at', 'updated_at', 'user', 'is_saved', 'primary_dataset_id', 'has_deployments', 'latest_deployment_id']
         read_only_fields = ['id', 'created_at', 'updated_at', 'user']
+        
+    def validate_title(self, value):
+        import re
+        if len(value) > 255:
+            raise serializers.ValidationError("Title cannot exceed 255 characters.")
+        if not re.match(r'^[\w\s\-\.,\(\)]+$', value):
+            raise serializers.ValidationError("Title contains invalid characters. Only alphanumeric, spaces, and basic punctuation are allowed.")
+        return value
+        
+    def validate_description(self, value):
+        if value and len(value) > 2000:
+            raise serializers.ValidationError("Description cannot exceed 2000 characters.")
+        return value
 
     def get_primary_dataset_id(self, obj):
         dataset = obj.datasets.first()
